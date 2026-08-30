@@ -41,9 +41,17 @@ export function program(): Command {
     .option("-y, --yes", "accept detected defaults, no prompts")
     .option("--harness <list>", "comma-separated: claude,cursor,codex,copilot,gemini")
     .option("--framework <name>", "next | none")
-    .action(async (o: { yes?: boolean; harness?: string; framework?: Framework }) => {
-      await init({ root: root(), ...o })
-    })
+    .option("--skip-install", "write the files, install nothing")
+    .action(
+      async (o: {
+        yes?: boolean
+        harness?: string
+        framework?: Framework
+        skipInstall?: boolean
+      }) => {
+        await init({ root: root(), ...o })
+      }
+    )
 
   cli
     .command("check")

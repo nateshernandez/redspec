@@ -16,6 +16,7 @@ import { newFeature, newJourneys, newRule, newSlice, newState } from "./commands
 import { staleContexts, sync } from "./commands/sync"
 import { loadContext } from "./context"
 import { detectFramework, detectHarnesses } from "./harness"
+import { installCommand, missingDeps } from "./install"
 
 // A fresh fake Next app with Claude Code and Cursor already in it.
 let root: string
@@ -55,7 +56,7 @@ describe("detection", () => {
 
 describe("init on a Next app", () => {
   it("writes the config, the gate, the route re-exports, and per-harness context", async () => {
-    const r = await init({ root, yes: true, quiet: true })
+    const r = await init({ root, yes: true, quiet: true, skipInstall: true })
     expect(r.framework).toBe("next")
     expect(r.harnesses).toEqual(["claude", "cursor"])
     for (const f of [
@@ -98,7 +99,7 @@ describe("init on a Next app", () => {
   })
   it("is idempotent", async () => {
     const before = readFileSync(join(root, "CLAUDE.md"), "utf8")
-    await init({ root, yes: true, quiet: true })
+    await init({ root, yes: true, quiet: true, skipInstall: true })
     expect(readFileSync(join(root, "CLAUDE.md"), "utf8")).toBe(before)
     expect(
       readFileSync(join(root, "CLAUDE.md"), "utf8").match(/redspec:start/g)
@@ -106,6 +107,30 @@ describe("init on a Next app", () => {
   })
   it("passes check with no specs yet", async () => {
     expect(await check(root, { quiet: true })).toBe(0)
+  })
+})
+
+describe("dependencies", () => {
+  it("counts only what the repo does not already have", () => {
+    mkdirSync(join(root, "node_modules/@redspec/core"), { recursive: true })
+    expect(missingDeps(root, ["@redspec/core", "@redspec/next"])).toEqual([
+      "@redspec/next",
+    ])
+  })
+
+  it("pins exact versions, and puts dev deps where the manager expects them", () => {
+    expect(installCommand("pnpm", ["vitest"], true)).toBe(
+      "pnpm add --save-exact --save-dev vitest"
+    )
+    expect(installCommand("npm", ["@redspec/core"], false)).toBe(
+      "npm install --save-exact --save @redspec/core"
+    )
+    expect(installCommand("yarn", ["vitest"], true)).toBe("yarn add --exact --dev vitest")
+  })
+
+  it("skipInstall still reports the lines it did not run", async () => {
+    const r = await init({ root, yes: true, quiet: true, skipInstall: true })
+    expect(r.install.join(" ")).toContain("fast-check")
   })
 })
 

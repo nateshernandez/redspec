@@ -13,6 +13,7 @@ import { CAPABILITIES } from "@redspec/method"
 import { packageManager } from "../context"
 import { Writer } from "../fs"
 import { detectFramework, detectHarnesses, hasTestRunner } from "../harness"
+import { installCommand, installDeps, missingDeps } from "../install"
 import * as t from "../templates"
 import { sync } from "./sync"
 
@@ -22,6 +23,8 @@ export type InitOptions = {
   harness?: string
   framework?: Framework
   quiet?: boolean
+  /** Write the files but leave the dependencies to the caller. */
+  skipInstall?: boolean
 }
 
 export async function init(opts: InitOptions): Promise<{
@@ -163,13 +166,17 @@ export async function init(opts: InitOptions): Promise<{
   const synced = sync(root, defineSpecConfig({ framework, harnesses }), harnesses)
   w.written.push(...synced.written)
 
-  const install = ["@redspec/core", "@redspec/cli"]
-  if (framework === "next") install.push("@redspec/next")
+  const runtime = ["@redspec/core", "@redspec/cli"]
+  if (framework === "next") runtime.push("@redspec/next")
   const dev = ["fast-check"]
   if (!runners.unit) dev.push("vitest")
   if (!runners.browser) dev.push("@playwright/test")
-  const addCmd = pm === "npm" ? "npm install" : `${pm} add`
-  const installLines = [`${addCmd} ${install.join(" ")}`, `${addCmd} -D ${dev.join(" ")}`]
+  const needRuntime = missingDeps(root, runtime)
+  const needDev = missingDeps(root, dev)
+  const installLines = [
+    ...(needRuntime.length ? [installCommand(pm, needRuntime, false)] : []),
+    ...(needDev.length ? [installCommand(pm, needDev, true)] : []),
+  ]
 
   if (!opts.quiet) {
     for (const f of w.written) {
@@ -178,9 +185,20 @@ export async function init(opts: InitOptions): Promise<{
         `  ${f.action === "created" ? pc.green("create") : pc.cyan("update")}  ${f.path}`
       )
     }
+  }
+
+  // The files above are inert without their packages: playwright.config.ts does
+  // not typecheck and the spec route does not build. So install, the way the
+  // framework's own CLI does, rather than leaving a shopping list in scrollback.
+  const installed = opts.skipInstall
+    ? false
+    : installDeps(root, pm, needRuntime, false, log) &&
+      installDeps(root, pm, needDev, true, log)
+
+  if (!opts.quiet) {
     log("")
     log(pc.bold("Next:"))
-    for (const l of installLines) log(`  ${l}`)
+    if (installLines.length && !installed) for (const l of installLines) log(`  ${l}`)
     log(`  ${pm === "npm" ? "npx" : `${pm} exec`} redspec doctor`)
     if (harnesses.length) {
       log("")

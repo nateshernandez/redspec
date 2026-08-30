@@ -20,6 +20,3 @@ export function createSpecProxy({ route = "/spec" }: { route?: string } = {}) {
     return NextResponse.next()
   }
 }
-
-/** The matcher for `export const config` beside the proxy. */
-export const specProxyMatcher = (route = "/spec") => [route, `${route}/:path*`]

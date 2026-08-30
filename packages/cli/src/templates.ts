@@ -19,12 +19,15 @@ export default defineSpecConfig({
 })
 `
 
-export const proxy = `import { createSpecProxy, specProxyMatcher } from "@redspec/next/gate"
+export const proxy = `import { createSpecProxy } from "@redspec/next/gate"
 
 // The production gate. It answers 404 before anything renders: a layout-level
 // notFound() still serializes the page into the response body.
 export const proxy = createSpecProxy({ route: "/spec" })
-export const config = { matcher: specProxyMatcher("/spec") }
+
+// Next statically parses this at build time, so every value has to stay a
+// literal -- a helper call here fails the build.
+export const config = { matcher: ["/spec", "/spec/:path*"] }
 `
 
 export const specsIndex = `// Every feature this repo declares. \`redspec new feature\` appends here.

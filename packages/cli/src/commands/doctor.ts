@@ -3,8 +3,9 @@ import { join } from "node:path"
 import pc from "picocolors"
 import { DIGEST_ALGO, HARNESSES } from "@redspec/core"
 import { CAPABILITIES } from "@redspec/method"
-import { loadContext } from "../context"
-import { detectHarnesses } from "../harness"
+import { loadContext, packageManager } from "../context"
+import { detectHarnesses, hasTestRunner } from "../harness"
+import { installCommand, missingDeps } from "../install"
 import { staleContexts } from "./sync"
 
 export async function doctor(root: string): Promise<number> {
@@ -54,6 +55,33 @@ export async function doctor(root: string): Promise<number> {
       ? ok(`${ctx.config.specsDir}/index.ts registers features for the app`)
       : bad(`${ctx.config.specsDir}/index.ts missing.`)
   }
+
+  // The packages the generated files import. `init` installs these, but a repo
+  // can arrive here without it -- --skip-install, a pruned package.json, a
+  // fresh clone with a stale lockfile -- and every one of those builds red
+  // while the rest of this report reads healthy.
+  console.log(pc.bold("\nDependencies"))
+  const pm = packageManager(root)
+  const runners = hasTestRunner(ctx.pkg)
+  const runtime = ["@redspec/core", "@redspec/cli"]
+  if (ctx.config.framework === "next") runtime.push("@redspec/next")
+  // Checked against node_modules, not package.json: a dependency the manifest
+  // declares but nobody installed is the case that builds red while every
+  // other line of this report reads healthy.
+  const dev = [
+    "fast-check",
+    runners.unit === "jest" ? "jest" : "vitest",
+    "@playwright/test",
+  ]
+  const needRuntime = missingDeps(root, runtime)
+  const needDev = missingDeps(root, dev)
+  const missing = new Set([...needRuntime, ...needDev])
+  for (const d of [...runtime, ...dev]) {
+    missing.has(d) ? bad(`${d} is not installed.`) : ok(d)
+  }
+  if (needRuntime.length)
+    console.log(pc.dim(`      ${installCommand(pm, needRuntime, false)}`))
+  if (needDev.length) console.log(pc.dim(`      ${installCommand(pm, needDev, true)}`))
 
   console.log(pc.bold("\nHarnesses"))
   const detected = new Set(detectHarnesses(root).map((d) => d.harness))

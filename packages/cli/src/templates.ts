@@ -19,7 +19,7 @@ export default defineSpecConfig({
 })
 `
 
-export const proxy = `import { createSpecProxy, specProxyMatcher } from "@redspec/next"
+export const proxy = `import { createSpecProxy, specProxyMatcher } from "@redspec/next/gate"
 
 // The production gate. It answers 404 before anything renders: a layout-level
 // notFound() still serializes the page into the response body.

@@ -10,13 +10,17 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./gate": {
+      "types": "./dist/gate.d.ts",
+      "default": "./dist/gate.js"
+    },
     "./board.css": "./dist/board.css"
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --clean --external react,react-dom,next && cp src/board/board.css dist/board.css",
+    "build": "tsup src/index.ts src/gate.ts --format esm --dts --clean --external react,react-dom,next && cp src/board/board.css dist/board.css",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

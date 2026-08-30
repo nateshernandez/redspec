@@ -4,7 +4,7 @@ The spec route, the board, and the production gate for Next.js 16.
 
 ```ts
 // proxy.ts
-import { createSpecProxy, specProxyMatcher } from "@redspec/next"
+import { createSpecProxy, specProxyMatcher } from "@redspec/next/gate"
 export const proxy = createSpecProxy({ route: "/spec" })
 export const config = { matcher: specProxyMatcher("/spec") }
 

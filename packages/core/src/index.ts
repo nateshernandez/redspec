@@ -1,13 +1,8 @@
-export * from "./types"
-export * from "./checklist"
-export * from "./findings"
-export * from "./brief"
-export * from "./audit"
-export * from "./graph"
+// The full surface, for Node consumers: the CLI, server components, scripts.
+// A client bundle must import "@redspec/core/client" instead -- the four
+// modules below reach node:fs, node:crypto, and jiti.
+export * from "./client"
 export * from "./digest"
 export * from "./lock"
-export * from "./decision-table"
-export * from "./board-layout"
-export * from "./config"
 export * from "./load"
 export * from "./coverage"

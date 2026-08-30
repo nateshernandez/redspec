@@ -32,7 +32,7 @@ import {
   NODE_W,
   type Board,
   type BoardNodeData,
-} from "@redspec/core"
+} from "@redspec/core/client"
 
 const FRAME_ABOVE_ZOOM = 0.35
 const VIEWS = ["flows", "surfaces"] as const

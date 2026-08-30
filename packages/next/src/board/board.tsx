@@ -1,7 +1,7 @@
 "use client"
 
 import dynamic from "next/dynamic"
-import type { Board } from "@redspec/core"
+import type { Board } from "@redspec/core/client"
 
 // Client-only: there is nothing in a pan-and-zoom canvas to serve early, and
 // React Flow's minimap hydrates differently on the server.

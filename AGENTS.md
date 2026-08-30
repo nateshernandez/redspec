@@ -11,3 +11,5 @@ feat(cli): add --watch flag to redspec run
 ```
 
 Keep the message to that one line. A body is for the rare change no single line can express — and needing one usually means the commit is doing several things, so split it into several one-line commits first.
+
+Never put a Claude session ID or session URL in a commit message. The history is a record of the code, not of the tool that touched it, and such a link resolves for nobody but the account that ran the session.

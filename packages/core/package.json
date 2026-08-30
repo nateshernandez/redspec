@@ -1,0 +1,39 @@
+{
+  "name": "@redspec/core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Specs made of artifacts that can go red: types, audit, lock, coverage, and decision-table analysis.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "fast-glob": "^3.3.3",
+    "jiti": "^2.6.0"
+  },
+  "devDependencies": {
+    "fast-check": "^4.9.0",
+    "react": "^19.2.0",
+    "@types/react": "^19.2.0"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  }
+}

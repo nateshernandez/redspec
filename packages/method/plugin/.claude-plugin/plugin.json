@@ -1,0 +1,9 @@
+{
+  "name": "redspec",
+  "displayName": "redspec",
+  "description": "Specs made of artifacts that can go red: the six-step flow, the amendment loop, and two adversarial agents.",
+  "version": "0.1.0",
+  "author": { "name": "Nate Hernandez" },
+  "license": "MIT",
+  "keywords": ["spec", "specification", "tdd", "playwright", "requirements"]
+}

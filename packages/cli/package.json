@@ -1,0 +1,33 @@
+{
+  "name": "@redspec/cli",
+  "version": "0.1.0",
+  "private": true,
+  "description": "redspec: init, check, status, new, accept, sync, doctor.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "redspec": "./bin/redspec.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "bin",
+    "templates"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.11.0",
+    "@redspec/core": "workspace:*",
+    "@redspec/method": "workspace:*",
+    "commander": "^14.0.0",
+    "picocolors": "^1.1.1"
+  }
+}

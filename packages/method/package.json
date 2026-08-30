@@ -1,0 +1,22 @@
+{
+  "name": "@redspec/method",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The redspec method as one source -- skills and agents -- rendered per harness.",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "plugin"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean",
+    "typecheck": "tsc --noEmit"
+  }
+}

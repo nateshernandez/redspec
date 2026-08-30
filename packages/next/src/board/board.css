@@ -1,0 +1,62 @@
+/* The board's own tokens. Override the --rs-* variables to match your app. */
+.rs-canvas, .redspec-board-page {
+  --rs-fg: #111827; --rs-bg: #ffffff; --rs-card: #ffffff; --rs-muted: #6b7280; --rs-border: #d1d5db;
+  --rs-muted-bg: #f3f4f6; --rs-alarm: #dc2626; --rs-font: ui-sans-serif, system-ui, sans-serif;
+  --rs-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--rs-fg); font-family: var(--rs-font);
+}
+@media (prefers-color-scheme: dark) {
+  .rs-canvas, .redspec-board-page { --rs-fg: #f9fafb; --rs-bg: #0b0f19; --rs-card: #111827; --rs-muted: #9ca3af; --rs-border: #374151; --rs-muted-bg: #1f2937; }
+}
+.rs-canvas { height: 100%; width: 100%; background: var(--rs-bg); }
+.rs-canvas .react-flow__edge-text { fill: var(--rs-fg); font-family: var(--rs-font); }
+.rs-canvas .react-flow__edge-textbg { fill: var(--rs-bg); }
+.rs-canvas .react-flow__handle { opacity: 0; }
+.rs-canvas .react-flow__minimap, .rs-canvas .react-flow__controls { background: var(--rs-card); border: 1px solid var(--rs-border); border-radius: 8px; }
+
+.rs-node { height: 100%; width: 100%; border-radius: 12px; position: relative; }
+.rs-alarm { box-shadow: 0 0 0 4px var(--rs-alarm); }
+.rs-alarm-text { color: var(--rs-alarm); }
+.rs-mono { font-family: var(--rs-mono); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rs-muted { color: var(--rs-muted); }
+
+.rs-chip { display: flex; height: 100%; width: 100%; flex-direction: column; justify-content: center; gap: 12px; border-radius: 12px; border: 2px solid var(--rs-border); background: var(--rs-card); padding: 0 32px; box-sizing: border-box; }
+.rs-chip-stub { border-style: dashed; background: var(--rs-muted-bg); }
+.rs-chip-id { margin: 0; font-family: var(--rs-mono); font-size: 34px; line-height: 1.15; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rs-chip-sub { margin: 0; font-size: 24px; color: var(--rs-muted); }
+.rs-chip-note { margin: 0; font-size: 22px; font-weight: 500; color: var(--rs-muted); }
+
+.rs-waiver { display: flex; height: 100%; width: 100%; flex-direction: column; justify-content: center; gap: 16px; border-radius: 12px; border: 2px dashed var(--rs-border); background: var(--rs-muted-bg); padding: 0 32px; box-sizing: border-box; }
+.rs-waiver-row { margin: 0; font-size: 28px; font-weight: 500; color: var(--rs-muted); text-decoration: line-through; }
+.rs-waiver-reason { margin: 0; font-size: 24px; line-height: 1.35; color: var(--rs-muted); }
+.rs-waiver-meta { margin: 0; font-size: 20px; font-family: var(--rs-mono); color: var(--rs-muted); }
+
+.rs-frame { display: flex; height: 100%; width: 100%; flex-direction: column; overflow: hidden; border-radius: 12px; border: 2px solid var(--rs-border); background: var(--rs-card); box-sizing: border-box; }
+.rs-frame-header { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--rs-border); padding: 0 12px; font-size: 12px; }
+.rs-frame-body { position: relative; flex: 1; overflow: hidden; background: var(--rs-bg); }
+.rs-frame-body iframe { position: absolute; top: 0; left: 0; transform-origin: top left; border: 0; pointer-events: none; }
+
+.rs-ends { position: absolute; top: 100%; left: 0; z-index: 10; margin-top: 12px; width: 100%; border-radius: 8px; border: 2px dashed var(--rs-border); background: var(--rs-bg); padding: 12px 16px; font-size: 22px; line-height: 1.35; box-sizing: border-box; }
+
+.rs-lane { display: flex; height: 100%; width: 100%; align-items: flex-end; }
+.rs-lane-title { margin: 0; font-size: 16px; font-weight: 600; }
+.rs-lane-sub { margin: 0; font-size: 12px; }
+
+.rs-toggle { display: inline-flex; border: 1px solid var(--rs-border); border-radius: 8px; overflow: hidden; background: var(--rs-card); }
+.rs-toggle button { border: 0; background: transparent; padding: 6px 12px; font: inherit; text-transform: capitalize; color: var(--rs-fg); cursor: pointer; }
+.rs-toggle button.rs-on { background: var(--rs-muted-bg); font-weight: 600; }
+
+/* Index and board chrome */
+.redspec-index { max-width: 960px; margin: 0 auto; padding: 40px; font-family: var(--rs-font, ui-sans-serif, system-ui); }
+.redspec-index h1 { font-size: 24px; font-weight: 500; margin: 0 0 24px; }
+.redspec-table { width: 100%; border-collapse: collapse; border: 1px solid #d1d5db; border-radius: 8px; overflow: hidden; }
+.redspec-table th, .redspec-table td { text-align: left; padding: 12px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
+.redspec-table th { background: #f9fafb; font-weight: 500; font-size: 13px; }
+.redspec-muted { color: #6b7280; font-size: 13px; }
+.redspec-badge { display: inline-block; border-radius: 999px; background: #f3f4f6; color: #111827; padding: 2px 10px; font-size: 12px; font-family: ui-monospace, monospace; }
+.redspec-badge-alarm { background: #dc2626; color: white; }
+.redspec-board-page { display: flex; height: 100svh; flex-direction: column; }
+.redspec-board-header { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 24px; border-bottom: 1px solid var(--rs-border); padding: 16px 24px; }
+.redspec-board-header a { color: inherit; }
+.redspec-findings { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.redspec-board-canvas { min-height: 0; flex: 1; }

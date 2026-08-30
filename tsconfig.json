@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@redspec/core": [
+        "packages/core/src/index.ts"
+      ],
+      "@redspec/method": [
+        "packages/method/src/index.ts"
+      ],
+      "@redspec/cli": [
+        "packages/cli/src/index.ts"
+      ],
+      "@redspec/next": [
+        "packages/next/src/index.ts"
+      ]
+    }
+  },
+  "files": []
+}

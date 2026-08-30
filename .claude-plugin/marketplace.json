@@ -1,0 +1,15 @@
+{
+  "name": "redspec",
+  "owner": { "name": "Nate Hernandez", "url": "https://github.com/natehernandez" },
+  "description": "Specs made of artifacts that can go red. The redspec method for Claude Code.",
+  "plugins": [
+    {
+      "name": "redspec",
+      "source": "./packages/method/plugin",
+      "description": "The redspec flow: draft-skeleton, render-states, implement-rules, cut-slices, build-slice, amend — plus the spec-adversary and slice-verifier agents.",
+      "version": "0.1.0",
+      "category": "workflow",
+      "keywords": ["spec", "specification", "tdd", "playwright", "requirements"]
+    }
+  ]
+}

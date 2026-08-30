@@ -1,0 +1,42 @@
+{
+  "steps": [
+    {
+      "skill": "draft-skeleton",
+      "owner": "product",
+      "hitl": true,
+      "produces": "BRIEF.md, and every state, flow, and rule declared and red"
+    },
+    {
+      "skill": "render-states",
+      "owner": "product",
+      "hitl": true,
+      "produces": "each declared state rendered, asserted, and signed off on the board"
+    },
+    {
+      "skill": "implement-rules",
+      "owner": "engineering",
+      "hitl": true,
+      "produces": "each stubbed rule on a rung that can fail"
+    },
+    {
+      "skill": "cut-slices",
+      "owner": "engineering",
+      "hitl": true,
+      "produces": "vertical slices, each claiming the artifacts it makes green"
+    },
+    {
+      "skill": "build-slice",
+      "owner": "engineering",
+      "hitl": false,
+      "produces": "one slice green, its claims stamped, PR open"
+    },
+    {
+      "skill": "amend",
+      "owner": "whoever owns the artifact",
+      "hitl": true,
+      "produces": "an amended artifact re-signed and re-stamped"
+    }
+  ],
+  "references": ["spec-flow", "falsifiable-specs"],
+  "agents": ["spec-adversary", "slice-verifier"]
+}

@@ -1,7 +1,13 @@
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { describe, expect, it } from "vitest"
-import { assertionBlocks, copyIdsIn, reportBundle, unregisteredBundles } from "./coverage"
+import {
+  assertionBlocks,
+  copyIdsIn,
+  readResolvedStates,
+  reportBundle,
+  unregisteredBundles,
+} from "./coverage"
 import { digestState } from "./digest"
 import { loadConfig, loadSpecs } from "./load"
 import { kinds } from "./fixtures.test-helper"
@@ -69,6 +75,7 @@ describe("reportBundle", () => {
     expect(Object.keys(report.digests).sort()).toEqual([
       "JOURNEY-demo-view-roster",
       "RULE-demo-invite-cooldown",
+      "RULE-demo-invite-resolution",
       "RULE-demo-roster-order",
       "STATE-demo-roster-empty",
       "STATE-demo-roster-loading",
@@ -126,6 +133,44 @@ describe("reportBundle", () => {
     expect(report.findings).toContainEqual(
       expect.objectContaining({ kind: "unknown-copy", id: "COPY-demo-roster-gone" })
     )
+  })
+})
+
+describe("resolution tables", () => {
+  it("names an outcome that is not a declared state", async () => {
+    const { config } = await loadConfig(root)
+    const [demo] = await loadSpecs(root, config)
+    const report = reportBundle(root, config, demo!)
+    const found = report.findings.filter((f) => f.kind === "unknown-state-outcome")
+    expect(found).toEqual([
+      expect.objectContaining({
+        id: "RULE-demo-invite-resolution",
+        detail: expect.stringContaining("STATE-demo-invite-nowhere"),
+      }),
+    ])
+  })
+
+  it("still proves the cross product total", async () => {
+    const { config } = await loadConfig(root)
+    const [demo] = await loadSpecs(root, config)
+    const report = reportBundle(root, config, demo!)
+    // Four combinations, three rows, `-` covering two of them: no gap here.
+    expect(
+      report.findings.filter(
+        (f) => f.kind === "table-gap" && f.id === "RULE-demo-invite-resolution"
+      )
+    ).toEqual([])
+  })
+})
+
+describe("what the board reads off disk", () => {
+  it("collects the states the resolution tables route to", async () => {
+    const { config } = await loadConfig(root)
+    expect([...readResolvedStates(root, config.specsDir, "demo")].sort()).toEqual([
+      "STATE-demo-invite-nowhere",
+      "STATE-demo-roster-empty",
+      "STATE-demo-roster-populated",
+    ])
   })
 })
 

@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest"
 import {
   analyzeDecisionTable,
   decide,
+  isResolutionTable,
   parseDecisionTable,
   representativeInputs,
+  stateOutcomes,
+  unroutedRows,
 } from "./decision-table"
 
 const total = `
@@ -90,5 +93,37 @@ describe("decision tables", () => {
         "## RULE-x\n**Inputs:** plan: {free}\n| plan | o |\n|---|---|\n| gold | 1 |"
       )
     ).toThrow(/Row 1, column "plan"/)
+  })
+})
+
+describe("resolution tables", () => {
+  const table = (rows: string) =>
+    parseDecisionTable(
+      `## RULE-demo-r\n\n**Inputs:** a: {p, q}\n\n| a | state |\n| --- | ----- |\n${rows}`,
+      "RULE-demo-r"
+    )
+
+  it("names a row that matches inputs and routes nowhere", () => {
+    // The region walk counts the blank row as covering `q`, so without this
+    // the table is provably total and still says nothing for half its inputs.
+    const t = table("| p | STATE-demo-a |\n| q |  |\n")
+    expect(analyzeDecisionTable(t).gaps).toEqual([])
+    expect(unroutedRows(t)).toEqual([2])
+    expect(stateOutcomes(t)).toEqual(["STATE-demo-a"])
+  })
+
+  it("is quiet when every row routes somewhere", () => {
+    expect(unroutedRows(table("| p | STATE-demo-a |\n| q | STATE-demo-b |\n"))).toEqual(
+      []
+    )
+  })
+
+  it("is not a resolution table without a state column", () => {
+    const t = parseDecisionTable(
+      `## RULE-demo-r\n\n**Inputs:** a: {p, q}\n\n| a | rate |\n| --- | ---- |\n| p | 1 |\n| q |  |\n`,
+      "RULE-demo-r"
+    )
+    expect(isResolutionTable(t)).toBe(false)
+    expect(unroutedRows(t)).toEqual([])
   })
 })

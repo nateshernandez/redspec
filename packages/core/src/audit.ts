@@ -21,6 +21,13 @@ export type AuditOptions = {
   now?: Date
   /** Require every waiver to name a witness rule. Off by default. */
   requireWitness?: boolean
+  /**
+   * States a resolution table routes to -- the `state` output column of a
+   * decision table. A rule is a producer like a flow step is, so a state it
+   * routes to is reached rather than stranded; it still owes the checklist an
+   * answer, so the omission check applies to it exactly as it does to a step.
+   */
+  resolvedStates?: ReadonlySet<string>
 }
 
 /** The surface a checklist row places a state on, if any row names it. */
@@ -91,6 +98,14 @@ export function auditSpec(spec: Spec, options: AuditOptions = {}): Finding[] {
   const reached = reachedStateIds(spec)
   const onChecklist = checklistStateIds(spec)
   const declared = declaredStateIds(spec)
+  // A state is *produced* by a flow step or by a resolution table. Both are
+  // paths to it; neither excuses it from the twelve rows. An outcome naming a
+  // state this spec does not declare is coverage's finding, not this one's.
+  const declaredSet = new Set(declared)
+  const resolved = new Set(
+    [...(options.resolvedStates ?? [])].filter((id) => declaredSet.has(id))
+  )
+  const produced = new Set([...reached, ...resolved])
 
   for (const id of declared) {
     if (!ID_PATTERN.test(id)) {
@@ -145,7 +160,11 @@ export function auditSpec(spec: Spec, options: AuditOptions = {}): Finding[] {
 
   for (const id of declared) {
     if (rendered.has(id)) continue
-    const by = onChecklist.has(id) ? "a checklist row" : "a flow"
+    const by = onChecklist.has(id)
+      ? "a checklist row"
+      : resolved.has(id)
+        ? "a rule"
+        : "a flow"
     findings.push({
       kind: "declared-not-rendered",
       id,
@@ -156,13 +175,14 @@ export function auditSpec(spec: Spec, options: AuditOptions = {}): Finding[] {
   }
 
   for (const id of rendered) {
-    if (reached.has(id)) continue
+    if (produced.has(id)) continue
     findings.push(
       onChecklist.has(id)
         ? {
             kind: "off-path",
             id,
-            detail: "Renders, but no flow reaches it. Place it, or delete it.",
+            detail:
+              "Renders, but no flow reaches it and no rule routes to it. Place it, or delete it.",
           }
         : {
             kind: "unclaimed-id",
@@ -173,10 +193,10 @@ export function auditSpec(spec: Spec, options: AuditOptions = {}): Finding[] {
     )
   }
 
-  // A state a flow walks that no checklist row names has bypassed the
+  // A state something produces that no checklist row names has bypassed the
   // omission check: the surfaces view never shows it, so nobody asks which of
   // the twelve it is.
-  for (const id of reached) {
+  for (const id of produced) {
     if (onChecklist.has(id)) continue
     findings.push({
       kind: "off-checklist",

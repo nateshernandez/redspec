@@ -47,6 +47,47 @@ export type DecisionTable = {
 
 export class TableParseError extends Error {}
 
+/**
+ * The output column that makes a table a *resolution* table: one whose outcome
+ * is which state the person ends up looking at.
+ *
+ * This is the one place a feature declares its own dimensions. The twelve
+ * checklist rows are a fixed axis on purpose -- they are a taxonomy that
+ * transfers between features, and a repo that can delete rows deletes the four
+ * it most needed. Where a screen genuinely turns on a combination the rows
+ * flatten, the combination belongs here, where the region walk proves the
+ * cross product total and every outcome is a state with a face on the board.
+ */
+export const STATE_OUTCOME_COLUMN = "state"
+
+export const isResolutionTable = (table: DecisionTable): boolean =>
+  table.outputColumns.includes(STATE_OUTCOME_COLUMN)
+
+/** Every state a resolution table routes to, deduped, in row order. */
+export function stateOutcomes(table: DecisionTable): string[] {
+  if (!isResolutionTable(table)) return []
+  const seen = new Set<string>()
+  for (const rule of table.rules) {
+    const outcome = rule.outputs[STATE_OUTCOME_COLUMN]
+    if (outcome) seen.add(outcome)
+  }
+  return [...seen]
+}
+
+/**
+ * The 1-based row numbers whose `state` cell is blank.
+ *
+ * The region walk counts such a row as covering its inputs, so a table can be
+ * proved total while a whole branch declines to say which screen anyone lands
+ * on -- green, and routing nowhere.
+ */
+export function unroutedRows(table: DecisionTable): number[] {
+  if (!isResolutionTable(table)) return []
+  return table.rules
+    .filter((rule) => !rule.outputs[STATE_OUTCOME_COLUMN]?.trim())
+    .map((rule) => rule.index)
+}
+
 const INF = Number.POSITIVE_INFINITY
 
 export function parseDomain(spec: string): Domain {

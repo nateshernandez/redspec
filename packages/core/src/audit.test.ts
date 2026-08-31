@@ -3,6 +3,16 @@ import { auditSpec, declaredStateIds } from "./audit"
 import { demoSpec, kinds } from "./fixtures.test-helper"
 import type { Spec } from "./types"
 
+/** The demo, with the empty state rendered but on no flow. */
+const offFlow = (): Spec => ({
+  ...demoSpec,
+  flows: demoSpec.flows.map((f) => ({
+    ...f,
+    spine: f.spine.filter((s) => s.case !== "STATE-demo-roster-empty"),
+    deviations: f.deviations.filter((d) => d.from !== "STATE-demo-roster-empty"),
+  })),
+})
+
 describe("auditSpec", () => {
   it("reports the one unrendered state as declared, not as a typo", () => {
     expect(auditSpec(demoSpec)).toEqual([
@@ -16,15 +26,26 @@ describe("auditSpec", () => {
   })
 
   it("goes red when a rendered case is taken off its flow", () => {
-    const orphaned: Spec = {
-      ...demoSpec,
-      flows: demoSpec.flows.map((f) => ({
-        ...f,
-        spine: f.spine.filter((s) => s.case !== "STATE-demo-roster-empty"),
-        deviations: f.deviations.filter((d) => d.from !== "STATE-demo-roster-empty"),
-      })),
-    }
-    expect(kinds(auditSpec(orphaned))).toContain("off-path")
+    expect(kinds(auditSpec(offFlow()))).toContain("off-path")
+  })
+
+  it("counts a state a resolution table routes to as reached", () => {
+    // A rule that names which state you land in is a producer, exactly as a
+    // flow step is. It does not excuse the state from the twelve rows.
+    const findings = auditSpec(offFlow(), {
+      resolvedStates: new Set(["STATE-demo-roster-empty"]),
+    })
+    expect(kinds(findings)).not.toContain("off-path")
+    expect(kinds(findings)).not.toContain("off-checklist")
+  })
+
+  it("ignores a resolved state the spec does not declare", () => {
+    // Coverage reports that as `unknown-state-outcome` against the rule; the
+    // audit must not also invent an off-checklist finding for a ghost.
+    const findings = auditSpec(demoSpec, {
+      resolvedStates: new Set(["STATE-demo-nowhere"]),
+    })
+    expect(findings.map((f) => f.id)).not.toContain("STATE-demo-nowhere")
   })
 
   it("goes red when a case names a surface the spec does not declare", () => {

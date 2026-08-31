@@ -36,7 +36,7 @@ const GROUPS: Group[] = [
   },
   {
     title: "DECISION TABLES",
-    kinds: ["table-gap", "table-overlap", "table-parse"],
+    kinds: ["table-gap", "table-overlap", "table-parse", "unknown-state-outcome"],
     hint: "→ make the table total",
     tone: pc.red,
   },

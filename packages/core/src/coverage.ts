@@ -12,9 +12,13 @@ import { actorsInBrief } from "./brief"
 import type { SpecConfig } from "./config"
 import {
   analyzeDecisionTable,
+  isResolutionTable,
   parseDecisionTable,
+  stateOutcomes,
   tableFindings,
   TableParseError,
+  unroutedRows,
+  type DecisionTable,
 } from "./decision-table"
 import { digestRule, digestState, registryDigests } from "./digest"
 import { sortFindings } from "./findings"
@@ -100,6 +104,28 @@ const testTitleRe = (id: string) =>
     `test(?:\\.\\w+)?\\(\\s*["'\`](${escapeRe(id)}(?![-a-z0-9])[^"'\`]*)["'\`]`,
     "g"
   )
+
+/**
+ * Every state the feature's resolution tables route to. The board needs this
+ * without running a full report: a state a rule routes to is reached, and the
+ * red lane has to keep meaning "nothing reaches this".
+ */
+export function readResolvedStates(
+  root: string,
+  specsDir: string,
+  slug: string
+): Set<string> {
+  const out = new Set<string>()
+  for (const rule of ruleFiles(join(root, specsDir, slug))) {
+    if (!rule.md || !/\*\*Inputs:\*\*/.test(rule.md)) continue
+    try {
+      for (const id of stateOutcomes(parseDecisionTable(rule.md, rule.id))) out.add(id)
+    } catch (e) {
+      if (!(e instanceof TableParseError)) throw e
+    }
+  }
+  return out
+}
 
 /**
  * The `COPY-` IDs a piece of source *asserts against*, deduped and sorted.
@@ -247,9 +273,33 @@ export function reportBundle(
   const artifacts: Artifact[] = []
   const digests: Record<string, string> = { ...registryDigests(spec) }
 
+  // --- rules, parsed first: a resolution table produces states, so the audit
+  // has to know what it routes to before it calls anything stranded.
+  const rules = ruleFiles(dir)
+  const ruleIds = new Set(rules.map((r) => r.id))
+  const tables = new Map<string, DecisionTable>()
+  for (const rule of rules) {
+    if (!rule.md || !/\*\*Inputs:\*\*/.test(rule.md)) continue
+    try {
+      tables.set(rule.id, parseDecisionTable(rule.md, rule.id))
+    } catch (e) {
+      if (e instanceof TableParseError) {
+        findings.push({ kind: "table-parse", id: rule.id, detail: e.message })
+      } else throw e
+    }
+  }
+  const resolvedStates = new Set<string>()
+  for (const table of tables.values()) {
+    for (const id of stateOutcomes(table)) resolvedStates.add(id)
+  }
+
   // --- registry
   findings.push(
-    ...auditSpec(spec, { now, requireWitness: config.waivers === "witnessed" })
+    ...auditSpec(spec, {
+      now,
+      requireWitness: config.waivers === "witnessed",
+      resolvedStates,
+    })
   )
 
   const stateTest = join(root, config.stateTestsDir, `${slug}.spec.ts`)
@@ -312,6 +362,18 @@ export function reportBundle(
       slug,
     })
   }
+  // A surface is an artifact in its own right: its twelve answers, and the
+  // waiver reasons among them. `registryDigests` has always digested it -- and
+  // until it was registered here nothing could claim it, so nothing could stamp
+  // it, so softening a waiver moved a requirement with no way to notice.
+  for (const key of Object.keys(spec.surfaces)) {
+    artifacts.push({
+      id: surfaceId(slug, key),
+      kind: "SURFACE",
+      source: `specs/${slug}/${config.specFile}`,
+      slug,
+    })
+  }
 
   // --- bundle on disk
   const briefPath = join(dir, "BRIEF.md")
@@ -334,21 +396,8 @@ export function reportBundle(
       }
     }
   }
-  // A surface is an artifact in its own right: its twelve answers, and the
-  // waiver reasons among them. `registryDigests` has always digested it -- and
-  // until it was registered here nothing could claim it, so nothing could stamp
-  // it, so softening a waiver moved a requirement with no way to notice.
-  for (const key of Object.keys(spec.surfaces)) {
-    artifacts.push({
-      id: surfaceId(slug, key),
-      kind: "SURFACE",
-      source: `specs/${slug}/${config.specFile}`,
-      slug,
-    })
-  }
 
-  const rules = ruleFiles(dir)
-  const ruleIds = new Set(rules.map((r) => r.id))
+  const declared = new Set(declaredStateIds(spec))
   for (const rule of rules) {
     if (!ID_PATTERN.test(rule.id) || !/^(RULE|INV)-/.test(rule.id)) {
       findings.push({
@@ -365,15 +414,32 @@ export function reportBundle(
       slug,
     })
     digests[rule.id] = digestRule(rule.md, rule.ts)
-    if (rule.md && /\*\*Inputs:\*\*/.test(rule.md)) {
-      try {
-        const table = parseDecisionTable(rule.md, rule.id)
-        findings.push(...tableFindings(table, analyzeDecisionTable(table)))
-      } catch (e) {
-        if (e instanceof TableParseError) {
-          findings.push({ kind: "table-parse", id: rule.id, detail: e.message })
-        } else throw e
-      }
+
+    const table = tables.get(rule.id)
+    if (!table) continue
+    findings.push(...tableFindings(table, analyzeDecisionTable(table)))
+    if (!isResolutionTable(table)) continue
+    // A resolution table's outcomes are states with faces on the board. An
+    // outcome naming a state nothing declares is a routing rule pointing at a
+    // screen that does not exist.
+    for (const outcome of stateOutcomes(table)) {
+      if (declared.has(outcome)) continue
+      findings.push({
+        kind: "unknown-state-outcome",
+        id: rule.id,
+        at: `specs/${slug}/rules/`,
+        detail: `Routes to "${outcome}", which no checklist row, flow, or case declares. Declare it, or fix the outcome.`,
+      })
+    }
+    // A blank outcome still covers its inputs for the region walk, so without
+    // this the table proves total while a branch says nothing.
+    for (const row of unroutedRows(table)) {
+      findings.push({
+        kind: "unknown-state-outcome",
+        id: rule.id,
+        at: `specs/${slug}/rules/`,
+        detail: `Row ${row} matches inputs and names no state. Say which screen that combination lands on.`,
+      })
     }
   }
   for (const [key, surface] of Object.entries(spec.surfaces)) {

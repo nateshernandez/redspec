@@ -36,6 +36,7 @@ export type FindingKind =
   | "table-gap"
   | "table-overlap"
   | "table-parse"
+  | "unknown-state-outcome"
 
 export type Finding = {
   kind: FindingKind

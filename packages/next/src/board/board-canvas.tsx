@@ -40,8 +40,6 @@ import {
   type Node,
   type NodeProps,
 } from "@xyflow/react"
-import "@xyflow/react/dist/style.css"
-import "./board.css"
 import { createContext, useContext, useMemo, useState } from "react"
 import {
   CASE_VIEWPORT_H,

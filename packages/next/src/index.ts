@@ -1,3 +1,3 @@
 export { createSpecProxy } from "./gate"
 export { createSpecRoutes, type RouteOptions } from "./pages"
-export { SpecBoard } from "./board/board"
+export { SpecBoard } from "./board/board.js"

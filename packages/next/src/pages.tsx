@@ -10,7 +10,8 @@ import {
   type BoardContext,
   type Spec,
 } from "@redspec/core"
-import { SpecBoard } from "./board/board"
+import { SpecBoard } from "./board/board.js"
+import { SpecStyles } from "./styles.js"
 
 export type RouteOptions = {
   route?: string
@@ -53,6 +54,7 @@ export function createSpecRoutes(
   function SpecIndexPage() {
     return (
       <div className="redspec-root">
+        <SpecStyles />
         <div className="redspec-index">
           <div className="redspec-index-inner">
             <h1>Specs</h1>
@@ -135,6 +137,7 @@ export function createSpecRoutes(
     const findings = auditSpec(spec, { resolvedStates: context.resolvedStates })
     return (
       <div className="redspec-root">
+        <SpecStyles />
         <div className="redspec-board-page">
           <header className="redspec-board-header">
             <nav>

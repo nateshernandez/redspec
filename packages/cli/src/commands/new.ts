@@ -104,7 +104,9 @@ export async function newState(
   report(w, opts.quiet)
   const surface = opts.surface ?? Object.keys(owner.spec.surfaces)[0] ?? "<surface>"
   if (!opts.quiet) {
-    console.log(`\nAdd to \`cases\` in ${rel(ctx.config.specFile)}:\n`)
+    console.log(`\nAdd to \`states\` in ${rel(ctx.config.specFile)}:\n`)
+    console.log(t.stateNameSnippet(id))
+    console.log(`\nAnd to \`cases\`:\n`)
     console.log(t.caseSnippet(id, surface, component, fixture))
     console.log(
       pc.dim(

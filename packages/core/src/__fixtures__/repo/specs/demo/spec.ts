@@ -23,14 +23,17 @@ export default defineSpec({
       },
     },
   },
+  states: {
+    "STATE-demo-roster-empty": "No teammates yet, and one Invite button",
+    "STATE-demo-roster-loading": "Skeleton rows where the roster will be",
+    "STATE-demo-roster-populated": "Three teammates, each with their access level",
+  },
   cases: {
     "STATE-demo-roster-empty": {
-      title: "Empty",
       surface: "roster",
       render: () => RosterEmpty(),
     },
     "STATE-demo-roster-populated": {
-      title: "Three people",
       surface: "roster",
       render: () => RosterPopulated({ names: ["Dana"] }),
     },

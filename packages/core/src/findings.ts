@@ -15,6 +15,7 @@ export type FindingKind =
   | "spine-ends-early"
   | "empty-spine"
   | "bad-id"
+  | "unnamed-state"
   | "waiver-due"
   | "waiver-unwitnessed"
   // bundle: the registry against specs/<slug>/

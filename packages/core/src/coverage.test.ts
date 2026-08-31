@@ -1,6 +1,8 @@
+import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { describe, expect, it } from "vitest"
 import { assertionBlocks, copyIdsIn, reportBundle, unregisteredBundles } from "./coverage"
+import { digestState } from "./digest"
 import { loadConfig, loadSpecs } from "./load"
 import { kinds } from "./fixtures.test-helper"
 
@@ -82,6 +84,39 @@ describe("reportBundle", () => {
     // The fixture asserts only the empty state; loading and populated digest
     // to the surface/row alone and so differ from empty by the assertion.
     expect(a["STATE-demo-roster-empty"]).not.toBe(a["STATE-demo-roster-populated"])
+  })
+
+  it("folds the words a state asserts into its digest", async () => {
+    const { config } = await loadConfig(root)
+    const [demo] = await loadSpecs(root, config)
+    expect(demo!.copy).toMatchObject({ "COPY-demo-roster-empty": "No one here but you" })
+
+    const report = reportBundle(root, config, demo!)
+    const source = readFileSync(join(root, "e2e/state/demo.spec.ts"), "utf8")
+    const id = "STATE-demo-roster-empty"
+
+    // The digest is exactly the one the state's own content produces, with the
+    // asserted copy in it -- so editing the string amends the state.
+    expect(report.digests[id]).toBe(
+      digestState({
+        surface: "roster",
+        row: "empty",
+        name: "No teammates yet, and one Invite button",
+        assertion: assertionBlocks(source, id),
+        baseline: null,
+        copy: { "COPY-demo-roster-empty": "No one here but you" },
+      })
+    )
+    expect(report.digests[id]).not.toBe(
+      digestState({
+        surface: "roster",
+        row: "empty",
+        name: "No teammates yet, and one Invite button",
+        assertion: assertionBlocks(source, id),
+        baseline: null,
+        copy: { "COPY-demo-roster-empty": "Nobody here but you" },
+      })
+    )
   })
 
   it("names a COPY id an assertion asserts against and the catalog does not have", async () => {

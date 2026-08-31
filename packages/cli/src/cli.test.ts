@@ -178,6 +178,10 @@ export default defineSpec({
     populated: { state: "STATE-roster-invites-roster-populated" }, overflowing: { waived: "x" }, recoverableError: { waived: "x" },
     terminalError: { waived: "x" }, permissionDenied: { waived: "x" }, stale: { waived: "x" }, inFlight: { waived: "x" },
     terminalSuccess: { waived: "x" }, conflict: { waived: "x" } } } },
+  states: {
+    "STATE-roster-invites-roster-empty": "Nobody invited yet, and one Invite button",
+    "STATE-roster-invites-roster-populated": "Everyone invited, with the state of each invite",
+  },
   cases: {},
   flows: [{ id: "JOURNEY-roster-invites-view", title: "View", actor: "Someone",
     spine: [{ case: "STATE-roster-invites-roster-empty", on: "Invites" }, { case: "STATE-roster-invites-roster-populated", end: "Done." }],

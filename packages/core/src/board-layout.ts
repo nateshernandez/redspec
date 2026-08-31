@@ -15,6 +15,7 @@
 
 import { declaredStateIds, resolveChecklistRow, resolveSurface } from "./audit"
 import { CHECKLIST_ROWS, rowLabel } from "./checklist"
+import { stateName } from "./types"
 import type { Spec } from "./types"
 
 /** The framed case is 1280×720 at half scale: the screenshot tier's viewport. */
@@ -93,7 +94,7 @@ function stateNode(
       kind: entry ? "case" : "stub",
       stateId: id,
       feature: spec.slug,
-      title: entry?.title ?? id,
+      title: stateName(spec, id),
       surface: surfaceKey ? spec.surfaces[surfaceKey]!.title : "No surface",
       checklistRow: row ? rowLabel(row) : undefined,
       ...extra,

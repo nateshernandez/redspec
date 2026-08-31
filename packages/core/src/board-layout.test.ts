@@ -38,8 +38,14 @@ const arbSpec = fc
       slug: "generated",
       title: "Generated",
       surfaces: { screen: { title: "Screen", checklist } },
+      states: Object.fromEntries(
+        [...ID_POOL, "STATE-nowhere", "STATE-x", "STATE-y"].map((id) => [
+          id,
+          `What ${id} looks like`,
+        ])
+      ),
       cases: Object.fromEntries(
-        rendered.map((id) => [id, { title: id, surface: "screen", render: () => null }])
+        rendered.map((id) => [id, { surface: "screen", render: () => null }])
       ),
       flows: [
         {

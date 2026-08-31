@@ -11,6 +11,12 @@ type Group = {
 
 const GROUPS: Group[] = [
   {
+    title: "UNNAMED — declared with only an ID",
+    kinds: ["unnamed-state"],
+    hint: "→ say what the person is looking at",
+    tone: pc.yellow,
+  },
+  {
     title: "DECLARED — not yet rendered",
     kinds: ["declared-not-rendered"],
     hint: "→ /render-states",

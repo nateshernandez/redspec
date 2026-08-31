@@ -9,7 +9,7 @@
 // skeleton after `/draft-skeleton`, red and correct at the same time, and it
 // must not read like the typo that `unclaimed-id` is.
 
-import { CHECKLIST_ROWS } from "./checklist"
+import { CHECKLIST_ROWS, rowLabel } from "./checklist"
 import type { ChecklistRow } from "./checklist"
 import { sortFindings } from "./findings"
 import type { Finding } from "./findings"
@@ -114,12 +114,42 @@ export function auditSpec(spec: Spec, options: AuditOptions = {}): Finding[] {
     }
   }
 
+  // A state with no name has only its ID, and an ID is an address rather than
+  // a description. This is the finding that keeps `/draft-skeleton` honest:
+  // the board it hands over is read before anything renders, so the naming has
+  // to happen there or it never happens at all.
+  for (const id of declared) {
+    const name = spec.states?.[id]?.trim()
+    if (!name) {
+      findings.push({
+        kind: "unnamed-state",
+        id,
+        detail:
+          "Declared with no entry in `states`. Say what the person is looking at, in one line.",
+      })
+      continue
+    }
+    const row = resolveChecklistRow(spec, id)
+    const restatement = [
+      row ? rowLabel(row).toLowerCase() : null,
+      id.split("-").slice(2).join(" "),
+    ].filter((s): s is string => !!s)
+    if (restatement.includes(name.toLowerCase())) {
+      findings.push({
+        kind: "unnamed-state",
+        id,
+        detail: `Named "${name}", which restates the row or the ID. A name says what is on the screen, not which slot this is.`,
+      })
+    }
+  }
+
   for (const id of declared) {
     if (rendered.has(id)) continue
+    const by = onChecklist.has(id) ? "a checklist row" : "a flow"
     findings.push({
       kind: "declared-not-rendered",
       id,
-      detail: `Declared by ${onChecklist.has(id) ? "a checklist row" : "a flow"}${
+      detail: `Declared by ${by}${
         reached.has(id) && onChecklist.has(id) ? " and walked by a flow" : ""
       }; no case renders it yet.`,
     })

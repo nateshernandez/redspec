@@ -20,10 +20,13 @@ import { CHECKLIST_ROWS } from "./checklist"
 import { surfaceId } from "./types"
 import type { Flow, Spec, Surface } from "./types"
 
-// 2: a state gained the copy its assertion asserts against, and a surface
-// gained its title -- both things a reviewer signs off on that used not move
-// the artifact.
-export const DIGEST_ALGO = 2
+// 2: a state gained its title and the copy its assertion asserts against, and
+// a surface gained its title -- all things a reviewer signs off on that used
+// not move the artifact.
+// 3: that title moved off the rendered case and onto the declaration, so it
+// exists -- and is signed off on -- from the skeleton onwards rather than only
+// once something renders.
+export const DIGEST_ALGO = 3
 
 export function sha256(input: string): string {
   return "sha256:" + createHash("sha256").update(input).digest("hex").slice(0, 24)
@@ -110,6 +113,8 @@ export function digestRule(markdown: string | null, code: string | null): string
 export type StateContent = {
   surface: string | null
   row: string | null
+  /** The declared name, which is what the board calls it to a reviewer. */
+  name: string | null
   /** The `test("STATE-…` block(s) naming this ID, from e2e/state. */
   assertion: string | null
   /** The screenshot baseline's bytes, hashed. */

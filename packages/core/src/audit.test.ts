@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { auditSpec } from "./audit"
+import { auditSpec, declaredStateIds } from "./audit"
 import { demoSpec, kinds } from "./fixtures.test-helper"
 import type { Spec } from "./types"
 
@@ -46,11 +46,7 @@ describe("auditSpec", () => {
       ...demoSpec,
       cases: {
         ...demoSpec.cases,
-        "STATE-demo-roster-ghost": {
-          title: "Ghost",
-          surface: "roster",
-          render: () => null,
-        },
+        "STATE-demo-roster-ghost": { surface: "roster", render: () => null },
       },
       flows: [
         {
@@ -159,12 +155,40 @@ describe("auditSpec", () => {
     )
   })
 
+  it("catches a state declared with nothing but an ID", () => {
+    const nameless: Spec = { ...demoSpec, states: {} }
+    const found = auditSpec(nameless).filter((f) => f.kind === "unnamed-state")
+    expect(found.map((f) => f.id).sort()).toEqual(declaredStateIds(demoSpec).sort())
+  })
+
+  it("catches a name that only restates the row or the ID", () => {
+    const lazy: Spec = {
+      ...demoSpec,
+      states: {
+        ...demoSpec.states,
+        // The row is already drawn beside it; saying it twice says nothing.
+        "STATE-demo-roster-empty": "Empty",
+        // ...and neither does spelling the ID back out.
+        "STATE-demo-roster-loading": "roster loading",
+      },
+    }
+    const found = auditSpec(lazy).filter((f) => f.kind === "unnamed-state")
+    expect(found.map((f) => f.id).sort()).toEqual([
+      "STATE-demo-roster-empty",
+      "STATE-demo-roster-loading",
+    ])
+  })
+
+  it("says nothing about a name that describes the screen", () => {
+    expect(kinds(auditSpec(demoSpec))).not.toContain("unnamed-state")
+  })
+
   it("rejects IDs that break the convention", () => {
     const bad: Spec = {
       ...demoSpec,
       cases: {
         ...demoSpec.cases,
-        "STATE-Demo-Roster_Big": { title: "x", surface: "roster", render: () => null },
+        "STATE-Demo-Roster_Big": { surface: "roster", render: () => null },
       },
     }
     expect(auditSpec(bad)).toContainEqual(

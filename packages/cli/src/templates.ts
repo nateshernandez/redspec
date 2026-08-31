@@ -157,6 +157,14 @@ export default defineSpec({
     // },
   },
 
+  // What each declared state *is*, in one line -- said where it is declared,
+  // because the board is read from here until /render-states, and a state
+  // whose only name is its ID is a state nobody can review. Say what the
+  // person is looking at, not which row it answers.
+  states: {
+    // "STATE-${slug}-<key>-empty": "Nothing here yet, and one button to start",
+  },
+
   cases: {},
 
   flows: [
@@ -266,7 +274,11 @@ export const caseSnippet = (
   component: string,
   fixture: string
 ) =>
-  `    "${id}": {\n      title: "<what this state is>",\n      surface: "${surface}",\n      render: () => <sketches.${component} {...fixtures.${fixture}} />,\n    },`
+  `    "${id}": {\n      surface: "${surface}",\n      render: () => <sketches.${component} {...fixtures.${fixture}} />,\n    },`
+
+/** The line that names a state, for the `states` map. */
+export const stateNameSnippet = (id: string) =>
+  `    "${id}": "<what the person is looking at>",`
 
 export function camel(id: string): string {
   return id

@@ -298,6 +298,7 @@ export function reportBundle(
     digests[id] = digestState({
       surface: resolveSurface(spec, id),
       row: resolveChecklistRow(spec, id),
+      name: spec.states?.[id]?.trim() || null,
       assertion,
       baseline: baseline ? digestRule(baseline, null) : null,
       copy,

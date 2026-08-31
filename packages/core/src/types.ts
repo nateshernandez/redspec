@@ -31,7 +31,6 @@ export type Surface = {
 
 /** One state of one surface, rendered from a fixture and nothing else. */
 export type Case = {
-  title: string
   /** The key in `surfaces` this is a state of. Audited, not typed. */
   surface: string
   render: () => ReactNode
@@ -65,15 +64,43 @@ export type Flow = {
   deviations: FlowDeviation[]
 }
 
+/**
+ * What each declared state is called, in words -- keyed by state ID.
+ *
+ * A name is written where the state is *declared*, not where it is rendered,
+ * because the board's whole job between `/draft-skeleton` and `/render-states`
+ * is to be read, and for that entire stretch nothing renders. A state whose
+ * only name is its ID is a state nobody can review: `STATE-access-door-empty`
+ * is an address, and an address is not a description.
+ *
+ * The bar is that a name says **what the person is looking at** -- "An empty
+ * field and a Continue button" -- not what the row is called. It is the Then,
+ * written early: `/render-states` writes the assertion that has to agree with
+ * it, and the name is in the state's digest, so softening one is a requirement
+ * moving with something to notice.
+ */
+export type StateNames = Record<string, string>
+
 /** Everything one feature declares. */
 export type Spec = {
   slug: string
   title: string
   surfaces: Record<string, Surface>
+  /** One line per declared state, whether or not anything renders it yet. */
+  states: StateNames
   /** Empty after `/draft-skeleton`. The board still draws every state. */
   cases: Record<string, Case>
   flows: Flow[]
 }
+
+/**
+ * The words the board calls a state, falling back to its ID when unnamed.
+ *
+ * Tolerant of a spec written before `states` existed: that is an
+ * `unnamed-state` finding for the audit to report, not a crash on load.
+ */
+export const stateName = (spec: Spec, id: string): string =>
+  spec.states?.[id]?.trim() || id
 
 /** Identity function that pins the type. `export default defineSpec({...})`. */
 export const defineSpec = (spec: Spec): Spec => spec

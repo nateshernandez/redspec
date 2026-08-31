@@ -28,6 +28,7 @@ import { compareLock, readLock } from "./lock"
 import type { ClaimInfo, Lock } from "./lock"
 import { declaredStateIds, resolveChecklistRow, resolveSurface } from "./audit"
 import { ID_PATTERN, surfaceId } from "./types"
+import type { Spec } from "./types"
 
 export type Artifact = { id: string; kind: string; source: string; slug: string }
 export type Slice = {
@@ -104,6 +105,41 @@ const testTitleRe = (id: string) =>
     `test(?:\\.\\w+)?\\(\\s*["'\`](${escapeRe(id)}(?![-a-z0-9])[^"'\`]*)["'\`]`,
     "g"
   )
+
+/**
+ * The intent sentence a state's assertion is named for: the test title with
+ * the ID stripped off the front. `/render-states` requires that title to say
+ * what a reviewer would say out loud, which makes it the only user-intent
+ * prose in the bundle -- and the only honest thing to draw on the board under
+ * a state, since it is already in the state's digest.
+ */
+export function assertionIntent(source: string, id: string): string | null {
+  const titles: string[] = []
+  let m: RegExpExecArray | null
+  const re = testTitleRe(id)
+  while ((m = re.exec(source))) {
+    const rest = m[1]!.slice(id.length).trim()
+    if (rest) titles.push(rest)
+  }
+  return titles.length ? titles.join(" · ") : null
+}
+
+/** Every state's assertion intent for one feature, for the board to draw. */
+export function readStateAssertions(
+  root: string,
+  stateTestsDir: string,
+  spec: Spec
+): Record<string, string> {
+  const file = join(root, stateTestsDir, `${spec.slug}.spec.ts`)
+  if (!existsSync(file)) return {}
+  const source = readFileSync(file, "utf8")
+  const out: Record<string, string> = {}
+  for (const id of declaredStateIds(spec)) {
+    const intent = assertionIntent(source, id)
+    if (intent) out[id] = intent
+  }
+  return out
+}
 
 /**
  * Every state the feature's resolution tables route to. The board needs this

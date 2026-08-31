@@ -3,8 +3,10 @@ import { join } from "node:path"
 import { describe, expect, it } from "vitest"
 import {
   assertionBlocks,
+  assertionIntent,
   copyIdsIn,
   readResolvedStates,
+  readStateAssertions,
   reportBundle,
   unregisteredBundles,
 } from "./coverage"
@@ -164,6 +166,20 @@ describe("resolution tables", () => {
 })
 
 describe("what the board reads off disk", () => {
+  it("takes the intent sentence off the assertion, without the ID", async () => {
+    const { config } = await loadConfig(root)
+    const [demo] = await loadSpecs(root, config)
+    expect(readStateAssertions(root, config.stateTestsDir, demo!.spec)).toEqual({
+      "STATE-demo-roster-empty": "offers the action that fills it",
+    })
+  })
+
+  it("says nothing rather than guessing when the file is missing", async () => {
+    const { config } = await loadConfig(root)
+    const [demo] = await loadSpecs(root, config)
+    expect(readStateAssertions(root, "e2e/nowhere", demo!.spec)).toEqual({})
+  })
+
   it("collects the states the resolution tables route to", async () => {
     const { config } = await loadConfig(root)
     expect([...readResolvedStates(root, config.specsDir, "demo")].sort()).toEqual([
@@ -181,6 +197,28 @@ describe("copyIdsIn", () => {
     ).toEqual(["COPY-demo-a", "COPY-demo-b"])
     expect(copyIdsIn("no ids here")).toEqual([])
     expect(copyIdsIn(null)).toEqual([])
+  })
+})
+
+describe("matching an assertion to its state", () => {
+  const source = `
+test("STATE-demo-roster shows the screen", async ({ page }) => { await go(1) })
+test("STATE-demo-roster-empty offers the action that fills it", async ({ page }) => { await go(2) })
+`
+  it("does not let a state swallow the assertion of one it prefixes", () => {
+    // Without a boundary the shorter ID matches both, and its digest would
+    // move whenever the longer state's contract moved.
+    expect(assertionIntent(source, "STATE-demo-roster")).toBe("shows the screen")
+    expect(assertionIntent(source, "STATE-demo-roster-empty")).toBe(
+      "offers the action that fills it"
+    )
+    expect(assertionBlocks(source, "STATE-demo-roster")).toContain("go(1)")
+    expect(assertionBlocks(source, "STATE-demo-roster")).not.toContain("go(2)")
+  })
+
+  it("says nothing when no test names the state", () => {
+    expect(assertionIntent(source, "STATE-demo-nowhere")).toBe(null)
+    expect(assertionBlocks(source, "STATE-demo-nowhere")).toBe(null)
   })
 })
 

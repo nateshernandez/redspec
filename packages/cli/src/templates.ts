@@ -40,11 +40,23 @@ export const specs: Spec[] = [
 ]
 `
 
-export const nextRoutes = `import { createSpecRoutes } from "@redspec/next"
+// The board reads the state tier and the rules off disk to draw what a state
+// asserts and where a resolution table routes, so these paths have to be this
+// repo's rather than the defaults -- otherwise the board contradicts
+// `redspec check` on a repo that moved either one.
+export const nextRoutes = (config: {
+  route: string
+  specsDir: string
+  stateTestsDir: string
+}) => `import { createSpecRoutes } from "@redspec/next"
 import { specs } from "../../specs"
 
 export const { SpecLayout, SpecIndexPage, SpecBoardPage, SpecCasePage, generateStaticParams } =
-  createSpecRoutes(specs, { route: "/spec" })
+  createSpecRoutes(specs, {
+    route: ${JSON.stringify(config.route)},
+    specsDir: ${JSON.stringify(config.specsDir)},
+    stateTestsDir: ${JSON.stringify(config.stateTestsDir)},
+  })
 `
 export const nextLayout = `export { SpecLayout as default } from "./_routes"\n`
 export const nextIndex = `export { SpecIndexPage as default } from "./_routes"\n`

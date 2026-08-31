@@ -107,6 +107,9 @@ export async function init(opts: InitOptions): Promise<{
   }
 
   const w = new Writer(root)
+  // What `spec.config.ts` will say once written, so the files generated from
+  // it below agree with it.
+  const config = defineSpecConfig({ framework, harnesses })
 
   // The one config file, and the bundle root.
   w.create("spec.config.ts", t.specConfig(framework, harnesses))
@@ -133,7 +136,7 @@ export async function init(opts: InitOptions): Promise<{
     } else {
       w.create(`${src}proxy.ts`, t.proxy)
     }
-    w.create(`${src}app/spec/_routes.ts`, t.nextRoutes)
+    w.create(`${src}app/spec/_routes.ts`, t.nextRoutes(config))
     w.create(`${src}app/spec/layout.tsx`, t.nextLayout)
     w.create(`${src}app/spec/page.tsx`, t.nextIndex)
     w.create(`${src}app/spec/[feature]/page.tsx`, t.nextBoard)
@@ -163,7 +166,7 @@ export async function init(opts: InitOptions): Promise<{
   }
 
   // Agent context, per harness.
-  const synced = sync(root, defineSpecConfig({ framework, harnesses }), harnesses)
+  const synced = sync(root, config, harnesses)
   w.written.push(...synced.written)
 
   const runtime = ["@redspec/core", "@redspec/cli"]

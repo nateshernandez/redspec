@@ -1,62 +1,843 @@
-/* The board's own tokens. Override the --rs-* variables to match your app. */
-.rs-canvas, .redspec-board-page {
-  --rs-fg: #111827; --rs-bg: #ffffff; --rs-card: #ffffff; --rs-muted: #6b7280; --rs-border: #d1d5db;
-  --rs-muted-bg: #f3f4f6; --rs-alarm: #dc2626; --rs-font: ui-sans-serif, system-ui, sans-serif;
+/* The board's whole appearance, in one file.
+ *
+ * These routes are shipped as a self-contained piece of interface: they take
+ * over the viewport and answer for every element they draw, so a spec board
+ * looks the same in a Tailwind app, a CSS-modules app, and an app with no
+ * stylesheet at all. Everything here is scoped under `.redspec-root`, which
+ * `pages.tsx` puts on the index and the board page and nowhere else -- a case
+ * route renders the app's own component with the app's own styles, because a
+ * screenshot baseline has to be of the real thing.
+ *
+ * Override the --rs-* variables to retheme it. */
+
+.redspec-root {
+  --rs-fg: #111827;
+  --rs-fg-dim: #4b5563;
+  --rs-bg: #ffffff;
+  --rs-bg-sunk: #f9fafb;
+  --rs-card: #ffffff;
+  --rs-muted: #6b7280;
+  --rs-border: #d1d5db;
+  --rs-border-soft: #e5e7eb;
+  --rs-muted-bg: #f3f4f6;
+  --rs-alarm: #dc2626;
+  --rs-alarm-bg: #fef2f2;
+  --rs-alarm-fg: #b91c1c;
+  --rs-ok-bg: #ecfdf5;
+  --rs-ok-fg: #047857;
+  --rs-accent: #2563eb;
+  --rs-shadow: 0 1px 2px rgb(16 24 40 / 6%), 0 8px 24px rgb(16 24 40 / 6%);
+  --rs-font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --rs-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
-  color: var(--rs-fg); font-family: var(--rs-font);
+
+  /* The five kinds of moment a checklist row is. Five is a scale a reader can
+     hold; twelve is a lookup table. Every one is legible on both grounds and
+     distinguishable without relying on hue alone -- the row's name is always
+     written next to it. */
+  --rs-fam-settled: #64748b;
+  --rs-fam-transient: #0891b2;
+  --rs-fam-error: #dc2626;
+  --rs-fam-blocked: #b45309;
+  --rs-fam-done: #047857;
+
+  /* The three things an arrow can mean. */
+  --rs-spine: #1d4ed8;
+  --rs-branch: #b45309;
+  --rs-rejoin: #6b7280;
 }
 @media (prefers-color-scheme: dark) {
-  .rs-canvas, .redspec-board-page { --rs-fg: #f9fafb; --rs-bg: #0b0f19; --rs-card: #111827; --rs-muted: #9ca3af; --rs-border: #374151; --rs-muted-bg: #1f2937; }
+  .redspec-root {
+    --rs-fg: #f9fafb;
+    --rs-fg-dim: #d1d5db;
+    --rs-bg: #0b0f19;
+    --rs-bg-sunk: #0f1522;
+    --rs-card: #111827;
+    --rs-muted: #9ca3af;
+    --rs-border: #374151;
+    --rs-border-soft: #1f2937;
+    --rs-muted-bg: #1f2937;
+    --rs-alarm: #f87171;
+    --rs-alarm-bg: #2a1214;
+    --rs-alarm-fg: #fca5a5;
+    --rs-ok-bg: #052e23;
+    --rs-ok-fg: #6ee7b7;
+    --rs-accent: #93c5fd;
+    --rs-shadow: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 24px rgb(0 0 0 / 40%);
+
+    --rs-fam-settled: #94a3b8;
+    --rs-fam-transient: #22d3ee;
+    --rs-fam-error: #f87171;
+    --rs-fam-blocked: #fbbf24;
+    --rs-fam-done: #34d399;
+
+    --rs-spine: #93c5fd;
+    --rs-branch: #fbbf24;
+    --rs-rejoin: #9ca3af;
+  }
 }
-.rs-canvas { height: 100%; width: 100%; background: var(--rs-bg); }
-.rs-canvas .react-flow__edge-text { fill: var(--rs-fg); font-family: var(--rs-font); }
-.rs-canvas .react-flow__edge-textbg { fill: var(--rs-bg); }
-.rs-canvas .react-flow__handle { opacity: 0; }
-.rs-canvas .react-flow__minimap, .rs-canvas .react-flow__controls { background: var(--rs-card); border: 1px solid var(--rs-border); border-radius: 8px; }
 
-.rs-node { height: 100%; width: 100%; border-radius: 12px; position: relative; }
-.rs-alarm { box-shadow: 0 0 0 4px var(--rs-alarm); }
-.rs-alarm-text { color: var(--rs-alarm); }
-.rs-mono { font-family: var(--rs-mono); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rs-muted { color: var(--rs-muted); }
+/* The takeover, and the reset. The host's root layout is still above us in the
+   document -- its nav, its container padding, its preflight -- so the root
+   leaves the flow entirely and every tag we draw is answered for below. */
+.redspec-root {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--rs-bg);
+  color: var(--rs-fg);
+  font-family: var(--rs-font);
+  font-size: 14px;
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1.5;
+  letter-spacing: normal;
+  text-align: left;
+  -webkit-font-smoothing: antialiased;
+  color-scheme: light dark;
+}
+.redspec-root *,
+.redspec-root *::before,
+.redspec-root *::after {
+  box-sizing: border-box;
+}
+.redspec-root h1,
+.redspec-root h2,
+.redspec-root p,
+.redspec-root dl,
+.redspec-root dd,
+.redspec-root figure {
+  margin: 0;
+}
+.redspec-root a {
+  color: inherit;
+  text-decoration: none;
+}
+.redspec-root button {
+  margin: 0;
+  font: inherit;
+  color: inherit;
+}
+.redspec-root table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+.redspec-root code,
+.redspec-root pre {
+  font-family: var(--rs-mono);
+}
+.redspec-root svg {
+  display: block;
+}
 
-.rs-chip { display: flex; height: 100%; width: 100%; flex-direction: column; justify-content: center; gap: 12px; border-radius: 12px; border: 2px solid var(--rs-border); background: var(--rs-card); padding: 0 32px; box-sizing: border-box; }
-.rs-chip-stub { border-style: dashed; background: var(--rs-muted-bg); }
-.rs-chip-id { margin: 0; font-family: var(--rs-mono); font-size: 34px; line-height: 1.15; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rs-chip-sub { margin: 0; font-size: 24px; color: var(--rs-muted); }
-.rs-chip-note { margin: 0; font-size: 22px; font-weight: 500; color: var(--rs-muted); }
+/* ---- the index ---- */
 
-.rs-waiver { display: flex; height: 100%; width: 100%; flex-direction: column; justify-content: center; gap: 16px; border-radius: 12px; border: 2px dashed var(--rs-border); background: var(--rs-muted-bg); padding: 0 32px; box-sizing: border-box; }
-.rs-waiver-row { margin: 0; font-size: 28px; font-weight: 500; color: var(--rs-muted); text-decoration: line-through; }
-.rs-waiver-reason { margin: 0; font-size: 24px; line-height: 1.35; color: var(--rs-muted); }
-.rs-waiver-meta { margin: 0; font-size: 20px; font-family: var(--rs-mono); color: var(--rs-muted); }
+.redspec-index {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 56px 32px 96px;
+}
+.redspec-index-inner {
+  margin: 0 auto;
+  max-width: 1040px;
+}
+.redspec-index h1 {
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.redspec-index-lede {
+  margin-top: 8px;
+  color: var(--rs-muted);
+  font-size: 14px;
+}
+.redspec-empty {
+  margin-top: 32px;
+  border: 1px dashed var(--rs-border);
+  border-radius: 12px;
+  background: var(--rs-bg-sunk);
+  padding: 40px;
+  text-align: center;
+  color: var(--rs-muted);
+}
+.redspec-empty code {
+  border-radius: 6px;
+  background: var(--rs-muted-bg);
+  padding: 2px 6px;
+  color: var(--rs-fg);
+  font-size: 13px;
+}
 
-.rs-frame { display: flex; height: 100%; width: 100%; flex-direction: column; overflow: hidden; border-radius: 12px; border: 2px solid var(--rs-border); background: var(--rs-card); box-sizing: border-box; }
-.rs-frame-header { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--rs-border); padding: 0 12px; font-size: 12px; }
-.rs-frame-body { position: relative; flex: 1; overflow: hidden; background: var(--rs-bg); }
-.rs-frame-body iframe { position: absolute; top: 0; left: 0; transform-origin: top left; border: 0; pointer-events: none; }
+.redspec-table {
+  margin-top: 28px;
+  width: 100%;
+  border: 1px solid var(--rs-border-soft);
+  border-radius: 12px;
+  background: var(--rs-card);
+  box-shadow: var(--rs-shadow);
+  overflow: hidden;
+}
+.redspec-table th,
+.redspec-table td {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--rs-border-soft);
+  vertical-align: top;
+}
+.redspec-table th {
+  background: var(--rs-bg-sunk);
+  color: var(--rs-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.redspec-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.redspec-table tbody tr:hover {
+  background: var(--rs-bg-sunk);
+}
+.redspec-table td code {
+  color: var(--rs-fg-dim);
+  font-size: 13px;
+}
+.redspec-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+.redspec-table a:hover .redspec-name {
+  color: var(--rs-accent);
+}
+.redspec-muted {
+  color: var(--rs-muted);
+  font-size: 13px;
+}
 
-.rs-ends { position: absolute; top: 100%; left: 0; z-index: 10; margin-top: 12px; width: 100%; border-radius: 8px; border: 2px dashed var(--rs-border); background: var(--rs-bg); padding: 12px 16px; font-size: 22px; line-height: 1.35; box-sizing: border-box; }
+.redspec-badge {
+  display: inline-block;
+  border-radius: 999px;
+  background: var(--rs-ok-bg);
+  color: var(--rs-ok-fg);
+  padding: 3px 10px;
+  font-family: var(--rs-mono);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.redspec-badge-alarm {
+  background: var(--rs-alarm-bg);
+  color: var(--rs-alarm-fg);
+}
 
-.rs-lane { display: flex; height: 100%; width: 100%; align-items: flex-end; }
-.rs-lane-title { margin: 0; font-size: 16px; font-weight: 600; }
-.rs-lane-sub { margin: 0; font-size: 12px; }
+/* ---- the board page ---- */
 
-.rs-toggle { display: inline-flex; border: 1px solid var(--rs-border); border-radius: 8px; overflow: hidden; background: var(--rs-card); }
-.rs-toggle button { border: 0; background: transparent; padding: 6px 12px; font: inherit; text-transform: capitalize; color: var(--rs-fg); cursor: pointer; }
-.rs-toggle button.rs-on { background: var(--rs-muted-bg); font-weight: 600; }
+.redspec-board-page {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+}
+.redspec-board-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 1px solid var(--rs-border-soft);
+  background: var(--rs-card);
+  padding: 14px 20px;
+}
+/* The nav is the one thing that must not be squeezed: a title that wraps to two
+   lines takes the header with it and the canvas loses the difference. */
+.redspec-board-header nav {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.redspec-board-header nav a {
+  color: var(--rs-muted);
+}
+.redspec-board-header nav a:hover {
+  color: var(--rs-accent);
+}
+.redspec-board-header strong {
+  font-weight: 600;
+}
+/* A red spec has as many findings as it has, so they wrap inside a bounded box
+   and scroll -- an unbounded row pushes the last of them off the screen. */
+.redspec-findings {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  max-height: 58px;
+  overflow-y: auto;
+}
+.redspec-findings .redspec-badge {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.redspec-board-canvas {
+  min-height: 0;
+  flex: 1;
+}
 
-/* Index and board chrome */
-.redspec-index { max-width: 960px; margin: 0 auto; padding: 40px; font-family: var(--rs-font, ui-sans-serif, system-ui); }
-.redspec-index h1 { font-size: 24px; font-weight: 500; margin: 0 0 24px; }
-.redspec-table { width: 100%; border-collapse: collapse; border: 1px solid #d1d5db; border-radius: 8px; overflow: hidden; }
-.redspec-table th, .redspec-table td { text-align: left; padding: 12px; border-bottom: 1px solid #e5e7eb; vertical-align: top; }
-.redspec-table th { background: #f9fafb; font-weight: 500; font-size: 13px; }
-.redspec-muted { color: #6b7280; font-size: 13px; }
-.redspec-badge { display: inline-block; border-radius: 999px; background: #f3f4f6; color: #111827; padding: 2px 10px; font-size: 12px; font-family: ui-monospace, monospace; }
-.redspec-badge-alarm { background: #dc2626; color: white; }
-.redspec-board-page { display: flex; height: 100svh; flex-direction: column; }
-.redspec-board-header { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 24px; border-bottom: 1px solid var(--rs-border); padding: 16px 24px; }
-.redspec-board-header a { color: inherit; }
-.redspec-findings { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
-.redspec-board-canvas { min-height: 0; flex: 1; }
+/* ---- the canvas ---- */
+
+.rs-canvas {
+  height: 100%;
+  width: 100%;
+  background: var(--rs-bg);
+}
+.rs-canvas .react-flow__edge-text {
+  fill: var(--rs-fg);
+  font-family: var(--rs-font);
+  font-weight: 500;
+}
+.rs-canvas .react-flow__edge-textbg {
+  fill: var(--rs-card);
+  stroke: var(--rs-border-soft);
+  stroke-width: 2;
+}
+.rs-canvas .react-flow__handle {
+  opacity: 0;
+}
+/* An edge's label is HTML rather than SVG text, so it wraps inside the gap the
+   layout reserved for it instead of running across the nodes it connects. */
+.rs-edge-label {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 10px;
+  border: 2px solid var(--rs-border-soft);
+  background: var(--rs-card);
+  padding: 8px 12px;
+  font-size: 26px;
+  line-height: 1.25;
+  font-weight: 500;
+  color: var(--rs-fg);
+  text-align: center;
+}
+.rs-edge-spine {
+  max-width: 380px;
+}
+/* Hung under the step it leaves from, in the band DEVIATION_GAP reserves. */
+.rs-edge-branch {
+  max-width: 560px;
+  border-color: color-mix(in srgb, var(--rs-branch) 45%, var(--rs-border-soft));
+  color: var(--rs-fg-dim);
+}
+
+/* An arrow is the flow. A stroke that scales with the canvas is 0.4px at the
+   zoom where the flow is what you are reading, so it does not scale. */
+.rs-canvas .react-flow__edge-path {
+  vector-effect: non-scaling-stroke;
+}
+.rs-canvas .react-flow__minimap,
+.rs-canvas .react-flow__controls {
+  background: var(--rs-card);
+  border: 1px solid var(--rs-border);
+  border-radius: 8px;
+  box-shadow: var(--rs-shadow);
+  overflow: hidden;
+}
+.rs-canvas .react-flow__minimap-mask {
+  fill: var(--rs-bg);
+  fill-opacity: 0.65;
+}
+.rs-canvas .react-flow__minimap-node {
+  fill: var(--rs-border);
+}
+.rs-canvas .react-flow__controls-button {
+  background: var(--rs-card);
+  border-bottom: 1px solid var(--rs-border-soft);
+  fill: var(--rs-fg);
+}
+.rs-canvas .react-flow__controls-button:hover {
+  background: var(--rs-muted-bg);
+}
+.rs-canvas .react-flow__background-pattern {
+  color: var(--rs-border);
+}
+
+.rs-node {
+  height: 100%;
+  width: 100%;
+  position: relative;
+}
+.rs-dim {
+  opacity: 0.16;
+}
+.rs-node,
+.rs-lane {
+  transition: opacity 120ms ease-out;
+}
+.rs-alarm-text {
+  color: var(--rs-alarm);
+}
+.rs-muted {
+  color: var(--rs-muted);
+}
+
+/* The ID: a reference you can read off and grep for, never the headline. A
+   name is what a state is; an ID is where it lives. */
+.rs-id {
+  font-family: var(--rs-mono);
+  font-size: 17px;
+  letter-spacing: -0.01em;
+  color: var(--rs-muted);
+  background: var(--rs-muted-bg);
+  border-radius: 5px;
+  padding: 2px 7px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- the far tier: the shape of the feature ---- */
+
+.rs-pill {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 10px;
+  border-radius: 28px;
+  padding: 0 44px;
+  border: 4px solid var(--rs-fam);
+  border-left-width: 40px;
+  background: color-mix(in srgb, var(--rs-fam) 14%, var(--rs-card));
+}
+.rs-pill-stub {
+  border-style: dashed;
+  border-left-style: solid;
+}
+.rs-pill-where {
+  font-size: 40px;
+  line-height: 1.1;
+  font-weight: 500;
+  color: var(--rs-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.rs-pill-row {
+  font-size: 58px;
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--rs-fam);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* ---- the middle and near tiers: the card ---- */
+
+.rs-card {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 14px;
+  border: 3px solid color-mix(in srgb, var(--rs-fam) 55%, var(--rs-border));
+  border-left-width: 14px;
+  border-left-color: var(--rs-fam);
+  background: var(--rs-card);
+  box-shadow: var(--rs-shadow);
+}
+.rs-card-stub {
+  border-style: dashed;
+  border-left-style: solid;
+  background: var(--rs-bg-sunk);
+}
+.rs-picked .rs-card {
+  box-shadow:
+    0 0 0 5px var(--rs-accent),
+    var(--rs-shadow);
+}
+.rs-alarm .rs-card {
+  box-shadow: 0 0 0 5px var(--rs-alarm);
+}
+.rs-card-note {
+  padding: 0 24px;
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--rs-muted);
+}
+
+/* The name is the headline and the only thing set large. Two lines is the
+   ceiling the layout reserves for -- see NODE_HEADER_H in board-layout.ts. */
+.rs-head {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 22px 24px 16px;
+}
+.rs-head-compact {
+  height: 100%;
+  justify-content: center;
+  padding: 12px 24px;
+  gap: 6px;
+}
+.rs-head-name {
+  font-size: 30px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+.rs-head-compact .rs-head-name {
+  font-size: 26px;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
+.rs-head-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  font-size: 19px;
+  color: var(--rs-muted);
+}
+.rs-head-row {
+  font-weight: 600;
+  color: var(--rs-fam);
+  white-space: nowrap;
+}
+.rs-head-sep {
+  color: var(--rs-border);
+}
+.rs-head-meta > span:nth-child(3) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rs-frame-body {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  background: var(--rs-bg);
+  border-top: 1px solid var(--rs-border-soft);
+}
+.rs-frame-body iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+  border: 0;
+  pointer-events: none;
+}
+
+/* ---- the waiver cell, on the surfaces view ---- */
+
+.rs-waiver {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+  border-radius: 14px;
+  border: 3px dashed var(--rs-border);
+  border-left: 14px solid var(--rs-border);
+  background: var(--rs-muted-bg);
+  padding: 0 32px;
+}
+.rs-waiver-row {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--rs-muted);
+  text-decoration: line-through;
+}
+.rs-waiver-asks {
+  font-size: 20px;
+  line-height: 1.3;
+  color: var(--rs-muted);
+  font-style: italic;
+}
+.rs-waiver-reason {
+  font-size: 23px;
+  line-height: 1.35;
+  color: var(--rs-fg-dim);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+  overflow: hidden;
+}
+.rs-waiver-meta {
+  font-size: 19px;
+  font-family: var(--rs-mono);
+  color: var(--rs-muted);
+}
+
+/* ---- what a node says below itself ----
+   Only the terminal note: the one fact about a node that is neither on an
+   arrow nor a constant. NODE_BELOW_H in board-layout.ts must stay >= what this
+   can draw, or it lands on the node beneath it. */
+.rs-below {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 10;
+  margin-top: 14px;
+  width: 100%;
+}
+.rs-ends {
+  width: 100%;
+  border-radius: 10px;
+  border: 3px solid var(--rs-fam-done);
+  background: color-mix(in srgb, var(--rs-fam-done) 12%, var(--rs-card));
+  padding: 12px 18px;
+  font-size: 21px;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+.rs-ends strong {
+  font-weight: 600;
+  color: var(--rs-fam-done);
+}
+
+/* ---- detail on demand, for the one node that was asked ---- */
+
+.rs-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 420px;
+  border-radius: 10px;
+  border: 1px solid var(--rs-border);
+  background: var(--rs-card);
+  box-shadow: var(--rs-shadow);
+  padding: 14px 16px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.rs-toolbar .rs-id {
+  font-size: 11px;
+  align-self: flex-start;
+}
+.rs-toolbar-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+.rs-toolbar-line strong {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--rs-muted);
+}
+
+/* ---- the lane: a band you are inside of ---- */
+
+.rs-lane-node {
+  pointer-events: none;
+}
+.rs-lane {
+  position: relative;
+  height: 100%;
+  width: 100%;
+  border-radius: 24px;
+  border: 3px solid var(--rs-border-soft);
+  background: color-mix(in srgb, var(--rs-muted) 9%, var(--rs-bg));
+}
+.rs-lane-alarm {
+  border-color: var(--rs-alarm);
+  background: var(--rs-alarm-bg);
+}
+/* The header is board-sized; the label inside it is screen-sized and sits on
+   its floor, so zooming out grows the label up and out rather than down over
+   the states. */
+.rs-lane-header {
+  position: absolute;
+  top: 0;
+  left: 24px;
+  right: 24px;
+  display: flex;
+  align-items: flex-end;
+}
+.rs-lane-label {
+  max-width: 620px;
+  border-radius: 8px;
+  background: var(--rs-card);
+  box-shadow: var(--rs-shadow);
+  padding: 7px 12px;
+  white-space: nowrap;
+}
+.rs-lane-title {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.rs-lane-sub {
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- the legend ---- */
+
+.rs-legend {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid var(--rs-border);
+  border-radius: 10px;
+  background: var(--rs-card);
+  box-shadow: var(--rs-shadow);
+  padding: 12px 14px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.rs-legend-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.rs-legend-block + .rs-legend-block {
+  border-top: 1px solid var(--rs-border-soft);
+  padding-top: 10px;
+}
+.rs-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.rs-legend-label {
+  font-weight: 600;
+  min-width: 74px;
+}
+.rs-legend-line {
+  width: 30px;
+  height: 0;
+  flex-shrink: 0;
+}
+.rs-legend-spine {
+  border-top: 3px solid var(--rs-spine);
+}
+.rs-legend-deviation {
+  border-top: 3px dashed var(--rs-branch);
+}
+.rs-legend-rejoin {
+  border-top: 3px dotted var(--rs-rejoin);
+}
+.rs-legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.rs-legend-hint {
+  max-width: 260px;
+  white-space: normal;
+}
+.rs-legend-shut {
+  padding: 4px;
+}
+.rs-legend-toggle {
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--rs-muted);
+}
+.rs-legend-toggle:hover {
+  background: var(--rs-muted-bg);
+  color: var(--rs-fg);
+}
+.rs-legend-block:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+/* Frame one journey at a time: the unit a reviewer actually walks. */
+.rs-lanes {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  margin-bottom: 8px;
+  max-width: 260px;
+  border: 1px solid var(--rs-border);
+  border-radius: 8px;
+  background: var(--rs-card);
+  box-shadow: var(--rs-shadow);
+  padding: 8px;
+}
+.rs-lanes-head {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--rs-muted);
+  padding: 0 6px 2px;
+}
+.rs-lanes button {
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  padding: 5px 8px;
+  text-align: left;
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--rs-fg-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rs-lanes button:hover {
+  background: var(--rs-muted-bg);
+  color: var(--rs-fg);
+}
+
+.rs-toggle {
+  display: inline-flex;
+  border: 1px solid var(--rs-border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--rs-card);
+  box-shadow: var(--rs-shadow);
+}
+.rs-toggle button {
+  border: 0;
+  background: transparent;
+  padding: 6px 12px;
+  text-transform: capitalize;
+  color: var(--rs-muted);
+  cursor: pointer;
+}
+.rs-toggle button.rs-on {
+  background: var(--rs-muted-bg);
+  color: var(--rs-fg);
+  font-weight: 600;
+}

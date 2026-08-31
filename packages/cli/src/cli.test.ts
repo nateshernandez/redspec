@@ -223,6 +223,10 @@ export default defineSpec({
           "STATE-roster-invites-roster-populated",
           "JOURNEY-roster-invites-view",
           "RULE-roster-invites-cooldown",
+          // The screen's twelve answers, waiver reasons included, are claimed
+          // like anything else -- otherwise softening one moves a requirement
+          // with nothing to notice.
+          "SURFACE-roster-invites-roster",
         ],
         amends: [],
         quiet: true,
@@ -282,6 +286,7 @@ describe("accept", () => {
       "RULE-roster-invites-cooldown",
       "STATE-roster-invites-roster-empty",
       "STATE-roster-invites-roster-populated",
+      "SURFACE-roster-invites-roster",
     ])
     expect(lock.entries["RULE-roster-invites-cooldown"].slice).toBe(
       "specs/roster-invites/slices/01-roster.md"
@@ -320,6 +325,23 @@ describe("accept", () => {
       "specs/roster-invites/slices/A02-cooldown.md"
     )
     expect(lock.entries["RULE-roster-invites-cooldown"].note).toBe("wording")
+  })
+
+  it("reports a softened waiver as amended", async () => {
+    // The waiver is the only prose left in a bundle, and it is a claim about
+    // the product rather than about the code. Weakening one is a requirement
+    // moving, so it has to reach the same sign-off the original did.
+    const specPath = join(root, "specs/roster-invites/spec.ts")
+    const before = readFileSync(specPath, "utf8")
+    writeFileSync(
+      specPath,
+      before.replace('stale: { waived: "x" }', 'stale: { waived: "usually x" }')
+    )
+    const ctx = await loadContext(root)
+    expect(ctx.reports[0]!.findings).toContainEqual(
+      expect.objectContaining({ kind: "amended", id: "SURFACE-roster-invites-roster" })
+    )
+    writeFileSync(specPath, before)
   })
 })
 

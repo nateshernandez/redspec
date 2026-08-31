@@ -20,6 +20,7 @@ export type FindingKind =
   // bundle: the registry against specs/<slug>/
   | "actor-without-flow"
   | "unknown-witness"
+  | "unknown-copy"
   | "missing-brief"
   | "unregistered-feature"
   // coverage: artifacts against slices

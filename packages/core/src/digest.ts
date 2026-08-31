@@ -7,14 +7,23 @@
 // ordered steps and labels, a rule is its normalized text, a surface is its
 // twelve answers including the waiver reasons.
 //
+// The test for whether something belongs here is whether a reviewer signs off
+// on it. Anything the board shows them and this file omits can be changed
+// afterwards with `check` still green -- which is the one failure the lock
+// exists to prevent.
+//
 // The algorithm is versioned in the lock. Changing any normalization here
 // bumps `DIGEST_ALGO` and migrates rather than turning every lock red at once.
 
 import { createHash } from "node:crypto"
 import { CHECKLIST_ROWS } from "./checklist"
+import { surfaceId } from "./types"
 import type { Flow, Spec, Surface } from "./types"
 
-export const DIGEST_ALGO = 1
+// 2: a state gained the copy its assertion asserts against, and a surface
+// gained its title -- both things a reviewer signs off on that used not move
+// the artifact.
+export const DIGEST_ALGO = 2
 
 export function sha256(input: string): string {
   return "sha256:" + createHash("sha256").update(input).digest("hex").slice(0, 24)
@@ -68,8 +77,12 @@ export function digestFlow(flow: Flow): string {
 
 export function digestSurface(surface: Surface): string {
   return sha256(
-    canonical(
-      CHECKLIST_ROWS.map(({ row }) => {
+    canonical({
+      // The screen's name, because the board says it to a reviewer on every
+      // chip and every lane header. Anything shown for sign-off is digested,
+      // or it can be changed under the person who signed it.
+      title: surface.title,
+      rows: CHECKLIST_ROWS.map(({ row }) => {
         const a = surface.checklist[row]
         return a.state
           ? { row, state: a.state }
@@ -79,8 +92,8 @@ export function digestSurface(surface: Surface): string {
               witness: a.witness ?? null,
               review: a.review ?? null,
             }
-      })
-    )
+      }),
+    })
   )
 }
 
@@ -101,7 +114,7 @@ export type StateContent = {
   assertion: string | null
   /** The screenshot baseline's bytes, hashed. */
   baseline: string | null
-  /** The COPY- entries the case renders, if a copy catalog is present. */
+  /** The COPY- entries this state's assertion asserts against. */
   copy: Record<string, string> | null
 }
 
@@ -119,7 +132,7 @@ export function registryDigests(spec: Spec): Record<string, string> {
   const out: Record<string, string> = {}
   for (const flow of spec.flows) out[flow.id] = digestFlow(flow)
   for (const [key, surface] of Object.entries(spec.surfaces)) {
-    out[`SURFACE-${spec.slug}-${key}`] = digestSurface(surface)
+    out[surfaceId(spec.slug, key)] = digestSurface(surface)
   }
   return out
 }

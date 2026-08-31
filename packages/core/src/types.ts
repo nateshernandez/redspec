@@ -85,7 +85,16 @@ export const defineSpec = (spec: Spec): Spec => spec
  */
 export const defineCopy = <T extends Record<`COPY-${string}`, string>>(copy: T): T => copy
 
-export const ID_PATTERN = /^(STATE|JOURNEY|RULE|INV|COPY)-[a-z0-9]+(-[a-z0-9]+)*$/
+export const ID_PATTERN = /^(STATE|JOURNEY|RULE|INV|COPY|SURFACE)-[a-z0-9]+(-[a-z0-9]+)*$/
+
+/**
+ * The lockable ID of one surface: its twelve answers, waiver reasons included.
+ * A waiver is the only prose left in a bundle and it is a claim about the
+ * product, so it is an artifact a slice claims and the lock stamps like any
+ * other -- otherwise softening one is a requirement moving with nothing to
+ * notice.
+ */
+export const surfaceId = (slug: string, key: string): string => `SURFACE-${slug}-${key}`
 export type ArtifactKind = "STATE" | "JOURNEY" | "RULE" | "INV" | "COPY" | "SURFACE"
 
 export const kindOf = (id: string): ArtifactKind | null => {

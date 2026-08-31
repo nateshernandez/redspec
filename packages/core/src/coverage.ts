@@ -23,7 +23,7 @@ import type { LoadedSpec } from "./load"
 import { compareLock, readLock } from "./lock"
 import type { ClaimInfo, Lock } from "./lock"
 import { declaredStateIds, resolveChecklistRow, resolveSurface } from "./audit"
-import { ID_PATTERN } from "./types"
+import { ID_PATTERN, surfaceId } from "./types"
 
 export type Artifact = { id: string; kind: string; source: string; slug: string }
 export type Slice = {
@@ -87,21 +87,140 @@ export function readSlices(root: string, bundleDir: string, slug: string): Slice
   })
 }
 
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+
+/**
+ * `test("<ID> <intent>", …)` naming this ID and not one it is merely a prefix
+ * of. Without the boundary, `STATE-demo-roster` matches
+ * `STATE-demo-roster-empty`'s test and swallows another state's contract into
+ * its digest -- which would make one state amend when a different one moved.
+ */
+const testTitleRe = (id: string) =>
+  new RegExp(
+    `test(?:\\.\\w+)?\\(\\s*["'\`](${escapeRe(id)}(?![-a-z0-9])[^"'\`]*)["'\`]`,
+    "g"
+  )
+
+/**
+ * The `COPY-` IDs a piece of source *asserts against*, deduped and sorted.
+ *
+ * Only quoted ones: `copy["COPY-…"]` is a reference, `// renamed from COPY-…`
+ * and a URL ending in `COPY-…` are not. Scanning bare text turns a comment
+ * into a red `unknown-copy`, and worse, folds a string the state does not use
+ * into its digest.
+ */
+export function copyIdsIn(text: string | null): string[] {
+  if (!text) return []
+  const found = new Set<string>()
+  const re = /["'`](COPY-[a-z0-9]+(?:-[a-z0-9]+)*)["'`]/g
+  let m: RegExpExecArray | null
+  while ((m = re.exec(text))) found.add(m[1]!)
+  return [...found].sort()
+}
+
+/**
+ * The index of the `)` closing the call whose `(` is at `open`.
+ *
+ * Naive paren counting reads parens inside strings, comments, and regex
+ * literals, any one of which can carry an unbalanced one: `getByText("Oops :(")`
+ * truncates the block, and everything after it -- including the `COPY-` the
+ * assertion checks -- silently leaves the state's digest. A truncated block is
+ * the worst failure this file has, because the artifact stays green forever.
+ */
+function closingParen(source: string, open: number): number {
+  let depth = 0
+  // What a `/` may follow and still start a regex rather than be a division.
+  let prev = ""
+  for (let i = open; i < source.length; i++) {
+    const c = source[i]!
+    if (c === "/" && source[i + 1] === "/") {
+      while (i < source.length && source[i] !== "\n") i++
+      continue
+    }
+    if (c === "/" && source[i + 1] === "*") {
+      i = source.indexOf("*/", i + 2)
+      if (i === -1) return source.length - 1
+      i++
+      continue
+    }
+    if (c === '"' || c === "'" || c === "`") {
+      i = endOfString(source, i)
+      prev = c
+      continue
+    }
+    if (c === "/" && /[([{,;:=!&|?+\-*%~^<>]/.test(prev)) {
+      i = endOfRegex(source, i)
+      prev = "/"
+      continue
+    }
+    if (c === "(") depth++
+    else if (c === ")" && --depth === 0) return i
+    if (!/\s/.test(c)) prev = c
+  }
+  return source.length - 1
+}
+
+/** Index of the quote closing the string opened at `start`. */
+function endOfString(source: string, start: number): number {
+  const quote = source[start]!
+  for (let i = start + 1; i < source.length; i++) {
+    const c = source[i]!
+    if (c === "\\") {
+      i++
+      continue
+    }
+    if (c === quote) return i
+    // A template's `${…}` is code again, and may hold strings of its own.
+    if (quote === "`" && c === "$" && source[i + 1] === "{") {
+      i = closingBrace(source, i + 1)
+      continue
+    }
+    // An unterminated single- or double-quoted string ends at the line.
+    if (quote !== "`" && c === "\n") return i
+  }
+  return source.length - 1
+}
+
+/** Index of the `}` closing the brace at `open`, strings and all. */
+function closingBrace(source: string, open: number): number {
+  let depth = 0
+  for (let i = open; i < source.length; i++) {
+    const c = source[i]!
+    if (c === '"' || c === "'" || c === "`") {
+      i = endOfString(source, i)
+      continue
+    }
+    if (c === "{") depth++
+    else if (c === "}" && --depth === 0) return i
+  }
+  return source.length - 1
+}
+
+/** Index of the `/` closing the regex opened at `start`. */
+function endOfRegex(source: string, start: number): number {
+  let inClass = false
+  for (let i = start + 1; i < source.length; i++) {
+    const c = source[i]!
+    if (c === "\\") {
+      i++
+      continue
+    }
+    if (c === "[") inClass = true
+    else if (c === "]") inClass = false
+    else if (c === "/" && !inClass) return i
+    else if (c === "\n") return i
+  }
+  return source.length - 1
+}
+
 /** The `test("STATE-… …", …)` blocks in a Playwright file that name this ID. */
 export function assertionBlocks(source: string, id: string): string | null {
   const blocks: string[] = []
-  const re = new RegExp(`test(?:\\.\\w+)?\\(\\s*["'\`]${id}[^"'\`]*["'\`]`, "g")
+  const re = testTitleRe(id)
   let m: RegExpExecArray | null
   while ((m = re.exec(source))) {
-    // Walk to the matching close of the `test(` call by paren depth.
-    let depth = 0
-    let i = m.index + m[0].indexOf("(")
-    for (; i < source.length; i++) {
-      if (source[i] === "(") depth++
-      if (source[i] === ")") depth--
-      if (depth === 0) break
-    }
-    blocks.push(source.slice(m.index, i + 1))
+    const open = m.index + m[0].indexOf("(")
+    blocks.push(source.slice(m.index, closingParen(source, open) + 1))
   }
   return blocks.length ? blocks.join("\n") : null
 }
@@ -151,12 +270,37 @@ export function reportBundle(
     const baseline = baselines.length
       ? baselines.map((f) => readFileSync(join(snapDir, f)).toString("base64")).join("")
       : null
+    const assertion = stateSource ? assertionBlocks(stateSource, id) : null
+
+    // The words are part of the state, so changing one has to amend it. Which
+    // words belong to *this* state is answered by its assertion: a sketch may
+    // render a string nothing checks, and a string nothing checks is not part
+    // of the contract anyone signed.
+    let copy: Record<string, string> | null = null
+    if (loaded.copy) {
+      const used: Record<string, string> = {}
+      for (const copyId of copyIdsIn(assertion)) {
+        const value = loaded.copy[copyId]
+        if (value === undefined) {
+          findings.push({
+            kind: "unknown-copy",
+            id: copyId,
+            at: relative(root, stateTest),
+            detail: `The assertion for ${id} names "${copyId}", and copy.ts has no such entry. A typo, or a rename that missed.`,
+          })
+          continue
+        }
+        used[copyId] = value
+      }
+      copy = Object.keys(used).length > 0 ? used : null
+    }
+
     digests[id] = digestState({
       surface: resolveSurface(spec, id),
       row: resolveChecklistRow(spec, id),
-      assertion: stateSource ? assertionBlocks(stateSource, id) : null,
+      assertion,
       baseline: baseline ? digestRule(baseline, null) : null,
-      copy: null,
+      copy,
     })
   }
   for (const flow of spec.flows) {
@@ -188,6 +332,18 @@ export function reportBundle(
         })
       }
     }
+  }
+  // A surface is an artifact in its own right: its twelve answers, and the
+  // waiver reasons among them. `registryDigests` has always digested it -- and
+  // until it was registered here nothing could claim it, so nothing could stamp
+  // it, so softening a waiver moved a requirement with no way to notice.
+  for (const key of Object.keys(spec.surfaces)) {
+    artifacts.push({
+      id: surfaceId(slug, key),
+      kind: "SURFACE",
+      source: `specs/${slug}/${config.specFile}`,
+      slug,
+    })
   }
 
   const rules = ruleFiles(dir)
@@ -224,7 +380,7 @@ export function reportBundle(
       if (answer.witness && !ruleIds.has(answer.witness)) {
         findings.push({
           kind: "unknown-witness",
-          id: `SURFACE-${slug}-${key}`,
+          id: surfaceId(slug, key),
           detail: `A waiver names witness "${answer.witness}", and no rule file has that ID.`,
         })
       }

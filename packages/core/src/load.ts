@@ -44,7 +44,16 @@ export async function loadConfig(
   return { config: defineSpecConfig(config), path }
 }
 
-export type LoadedSpec = { spec: Spec; dir: string; file: string }
+export type LoadedSpec = {
+  spec: Spec
+  dir: string
+  file: string
+  /** `copy.ts`'s catalog, so a state's digest can include the words it asserts. */
+  copy: Record<string, string> | null
+}
+
+/** The bundle's copy catalog: every value keyed by a `COPY-` ID, or null. */
+const COPY_FILE = "copy.ts"
 
 /** Every `specs/<slug>/` directory, whether or not it has a spec file yet. */
 export function listBundles(root: string, config: SpecConfig): string[] {
@@ -73,9 +82,33 @@ export async function loadSpecs(root: string, config: SpecConfig): Promise<Loade
         `${file} declares slug "${spec.slug}" but lives in specs/${slug}/. They must match.`
       )
     }
-    out.push({ spec, dir, file })
+    const copyFile = join(dir, COPY_FILE)
+    const copy = existsSync(copyFile)
+      ? pickCopy((await jiti.import(copyFile)) as Record<string, unknown>)
+      : null
+    out.push({ spec, dir, file, copy })
   }
   return out
+}
+
+/**
+ * Every `COPY-` string the module exports, from whichever objects hold them.
+ *
+ * Deliberately not all-or-nothing. `defineCopy` types the keys, but nothing
+ * makes a repo use it, and a catalog carrying one stray key would otherwise
+ * yield no catalog at all -- after which no state digests any copy and no
+ * `unknown-copy` ever fires. That failure is silent, and a silent loss of the
+ * thing the lock is for is worse than a catalog read loosely.
+ */
+function pickCopy(mod: Record<string, unknown>): Record<string, string> | null {
+  const out: Record<string, string> = {}
+  for (const c of [mod.default, mod.copy, ...Object.values(mod)]) {
+    if (!c || typeof c !== "object" || Array.isArray(c)) continue
+    for (const [k, v] of Object.entries(c as Record<string, unknown>)) {
+      if (k.startsWith("COPY-") && typeof v === "string") out[k] = v
+    }
+  }
+  return Object.keys(out).length > 0 ? out : null
 }
 
 function pickSpec(mod: Record<string, unknown>): Spec | null {

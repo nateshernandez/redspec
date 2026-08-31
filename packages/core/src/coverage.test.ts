@@ -1,6 +1,6 @@
 import { join } from "node:path"
 import { describe, expect, it } from "vitest"
-import { reportBundle, unregisteredBundles } from "./coverage"
+import { assertionBlocks, copyIdsIn, reportBundle, unregisteredBundles } from "./coverage"
 import { loadConfig, loadSpecs } from "./load"
 import { kinds } from "./fixtures.test-helper"
 
@@ -82,5 +82,75 @@ describe("reportBundle", () => {
     // The fixture asserts only the empty state; loading and populated digest
     // to the surface/row alone and so differ from empty by the assertion.
     expect(a["STATE-demo-roster-empty"]).not.toBe(a["STATE-demo-roster-populated"])
+  })
+
+  it("names a COPY id an assertion asserts against and the catalog does not have", async () => {
+    const { config } = await loadConfig(root)
+    const [demo] = await loadSpecs(root, config)
+    const report = reportBundle(root, config, demo!)
+    expect(report.findings).toContainEqual(
+      expect.objectContaining({ kind: "unknown-copy", id: "COPY-demo-roster-gone" })
+    )
+  })
+})
+
+describe("copyIdsIn", () => {
+  it("takes the COPY ids out of source and leaves everything else", () => {
+    expect(
+      copyIdsIn(`copy["COPY-demo-b"] + copy["COPY-demo-a"] + copy["COPY-demo-b"]`)
+    ).toEqual(["COPY-demo-a", "COPY-demo-b"])
+    expect(copyIdsIn("no ids here")).toEqual([])
+    expect(copyIdsIn(null)).toEqual([])
+  })
+})
+
+describe("finding where an assertion ends", () => {
+  it("is not truncated by a paren inside a string", () => {
+    const source = `
+test("STATE-demo-a offers the action", async ({ page }) => {
+  await expect(page.getByText("all done :)")).toBeVisible()
+  await expect(page.getByText(copy["COPY-demo-a"])).toBeVisible()
+})
+`
+    const block = assertionBlocks(source, "STATE-demo-a")!
+    expect(block).toContain("COPY-demo-a")
+    expect(copyIdsIn(block)).toEqual(["COPY-demo-a"])
+  })
+
+  it("is not run on to EOF by an unbalanced paren inside a string", () => {
+    const source = `
+test("STATE-demo-a renders", async ({ page }) => {
+  await expect(page.getByText("smile (")).toBeVisible()
+})
+
+test("STATE-demo-b renders", async ({ page }) => {
+  await expect(page.getByText(copy["COPY-demo-b"])).toBeVisible()
+})
+`
+    // A swallowed neighbour would put B's contract in A's digest, so editing
+    // B would amend A and A's copy set would be wrong.
+    expect(assertionBlocks(source, "STATE-demo-a")).not.toContain("COPY-demo-b")
+    expect(copyIdsIn(assertionBlocks(source, "STATE-demo-a"))).toEqual([])
+    expect(copyIdsIn(assertionBlocks(source, "STATE-demo-b"))).toEqual(["COPY-demo-b"])
+  })
+
+  it("reads past parens in comments, regex literals, and template holes", () => {
+    const source = `
+test("STATE-demo-a renders", async ({ page }) => {
+  // a stray ( in a comment
+  /* and ( another */
+  await expect(page.getByText(/no one \\(yet\\)/i)).toBeVisible()
+  await expect(page.getByText(\`\${count(1)} left (of many\`)).toBeVisible()
+  await expect(page.getByText(copy["COPY-demo-a"])).toBeVisible()
+})
+`
+    expect(copyIdsIn(assertionBlocks(source, "STATE-demo-a"))).toEqual(["COPY-demo-a"])
+  })
+
+  it("reads a COPY id only where it is quoted", () => {
+    expect(copyIdsIn(`// renamed from COPY-demo-old\ncopy["COPY-demo-new"]`)).toEqual([
+      "COPY-demo-new",
+    ])
+    expect(copyIdsIn("// see https://example.test/COPY-demo-legacy")).toEqual([])
   })
 })

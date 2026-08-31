@@ -54,7 +54,12 @@ const GROUPS: Group[] = [
   },
   {
     title: "BUNDLE",
-    kinds: ["actor-without-flow", "missing-brief", "unregistered-feature"],
+    kinds: [
+      "actor-without-flow",
+      "missing-brief",
+      "unregistered-feature",
+      "unknown-copy",
+    ],
     hint: "→ the bundle on disk disagrees with the registry",
     tone: pc.red,
   },

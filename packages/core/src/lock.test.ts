@@ -108,3 +108,37 @@ describe("lock", () => {
     expect(() => stamp(emptyLock(), ["RULE-nope"], digests, "s.md")).toThrow(/RULE-nope/)
   })
 })
+
+describe("what a surface digest covers", () => {
+  it("moves when the screen's own name changes", () => {
+    // The board says this name to a reviewer on every chip and lane header,
+    // so renaming it after sign-off has to come back as amended.
+    const renamed = {
+      ...demoSpec,
+      surfaces: {
+        roster: { ...demoSpec.surfaces.roster!, title: "Public roster" },
+      },
+    }
+    expect(registryDigests(renamed)["SURFACE-demo-roster"]).not.toBe(
+      registryDigests(demoSpec)["SURFACE-demo-roster"]
+    )
+  })
+
+  it("moves when a waiver reason is softened", () => {
+    const softened = {
+      ...demoSpec,
+      surfaces: {
+        roster: {
+          ...demoSpec.surfaces.roster!,
+          checklist: {
+            ...demoSpec.surfaces.roster!.checklist,
+            partial: { waived: "Usually one query.", witness: "INV-demo-single-query" },
+          },
+        },
+      },
+    }
+    expect(registryDigests(softened)["SURFACE-demo-roster"]).not.toBe(
+      registryDigests(demoSpec)["SURFACE-demo-roster"]
+    )
+  })
+})

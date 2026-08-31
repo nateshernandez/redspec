@@ -13,7 +13,7 @@ import { CHECKLIST_ROWS } from "./checklist"
 import type { ChecklistRow } from "./checklist"
 import { sortFindings } from "./findings"
 import type { Finding } from "./findings"
-import { ID_PATTERN } from "./types"
+import { ID_PATTERN, surfaceId } from "./types"
 import type { Spec } from "./types"
 
 export type AuditOptions = {
@@ -179,7 +179,7 @@ export function auditSpec(spec: Spec, options: AuditOptions = {}): Finding[] {
     for (const { row, label } of CHECKLIST_ROWS) {
       const answer = surface.checklist[row]
       if (answer.state) continue
-      const id = `SURFACE-${spec.slug}-${key}`
+      const id = surfaceId(spec.slug, key)
       if (answer.review && new Date(answer.review) <= now) {
         findings.push({
           kind: "waiver-due",

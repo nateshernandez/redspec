@@ -37,7 +37,7 @@ redspec replaces the document with **artifacts that fail**:
 - a **state** fails when its assertion or screenshot does
 - a **flow** fails when a state on it is unreachable
 - a **rule** fails when the code disagrees — or when its decision table has a gap
-- a **waiver** ("this screen cannot be half-loaded") fails when its witness rule does, or its review date passes
+- a **waiver** ("this screen cannot be half-loaded") fails when its witness rule does, when its review date passes, or when its reason is quietly softened after someone signed it
 - and every one of them fails again when **its own content changes** after it was verified, until someone signs for the change
 
 The Brief — one page of _why_, _who_, and _what's out_ — is the only prose left, and it is the only thing that cannot fail. That is why it is capped.
@@ -86,6 +86,16 @@ $ pnpm test && pnpm test:state
 ```
 
 Product signs off in a browser, not in a document. The board at `/spec/<feature>` lays every state along the path that reaches it, frames the live case in each node, draws a dashed stub for every state that is declared but not yet built, and puts anything nothing reaches in a red lane. Waivers are struck through with the reason — and the rule that would falsify them.
+
+Under each state the board writes three lines, and **authors none of them**:
+
+```
+Given  some data present, some still arriving or failed
+When   Invites the first teammate
+Then   lists everyone who has accepted, and no one who has not
+```
+
+The _Given_ is the checklist row's own situation, the _When_ is the flow's edge label, the _Then_ is the title of the state's assertion. All three are already inside a digest, so the board reads what `check` verifies rather than a caption someone can edit out from under it. That is the bar for anything shown to a reviewer here: if signing off on it is the point, it has to be able to go red.
 
 ## Quick start
 
@@ -203,6 +213,20 @@ A rule the business owns is a table the business can read — and one the machin
 
 `redspec check` walks every elementary region of the input space and reports any combination no row covers, and any two rows that both match under `UNIQUE`. The test then drives the implementation across _every_ region the table distinguishes, not only the listed points.
 
+Name the outcome column `state` and the same machinery routes to **screens** rather than to values — a **resolution table**, and the one place a feature declares dimensions of its own:
+
+```md
+**Inputs:** linkAge: {fresh, expired}, account: {none, locked}
+
+| linkAge | account | state                                |
+| ------- | ------- | ------------------------------------ |
+| fresh   | -       | STATE-roster-invites-invite-open     |
+| expired | none    | STATE-roster-invites-invite-expired  |
+| expired | locked  | STATE-roster-invites-invite-blocked  |
+```
+
+The cross product is proved total, every outcome is a state with a face on the board, and a state a table routes to is _reached_ — it appears in its own lane rather than the red one, and still owes the checklist a row. The twelve rows stay fixed on purpose: they are a taxonomy that transfers between features, and a repo that can delete rows deletes the four it most needed.
+
 ## The flow
 
 Six steps, each **HITL** — it stops and waits for the person who owns it — and each starting from `redspec status` rather than from the previous conversation. Product signs the Brief and the board. Engineering signs the rungs and the slicing. Neither reviews a document on the other's behalf.
@@ -247,7 +271,9 @@ Every finding kind, what it means, and what clears it is in the generated `docs/
 "RULE-roster-invites-cooldown": {"digest":"sha256:9f2c…","slice":"specs/roster-invites/slices/02-invite.md","at":"2026-08-14T11:02:00Z","commit":"c69a35c"}
 ```
 
-What is digested is the _meaning_, per kind — a flow is its ordered steps and edge labels, not its title; a surface is its twelve answers _including the waiver reasons_; a rule is its normalized markdown and code; a state is its assertion, its screenshot baseline, and its surface and row. One entry per line, keys sorted, so two slices landing the same week merge cleanly.
+What is digested is the _meaning_, per kind — a flow is its ordered steps and edge labels, not its title; a surface is its name and its twelve answers _including the waiver reasons_; a rule is its normalized markdown and code; a state is its title, its assertion, its screenshot baseline, its surface and row, and the `COPY-` entries its assertion asserts against. The test for what belongs in a digest is whether a reviewer signs off on it: anything the board shows them and the digest omits can be changed afterwards with `check` still green. One entry per line, keys sorted, so two slices landing the same week merge cleanly.
+
+A surface is an artifact like any other: `SURFACE-<slug>-<key>` is claimed by the slice that builds the screen and stamped by the same passing run. That is what makes a waiver falsifiable rather than decorative — weaken "the roster is one query" to "the roster is usually one query" and `check` reports it `amended` until someone signs for it.
 
 Change any of it and `check` reports **`amended`** until an amendment slice re-verifies it or `accept` re-stamps it after a passing run. There is no flag that skips the run. That closes the gap every other approach leaves open: a requirement that moves without anyone signing for it.
 

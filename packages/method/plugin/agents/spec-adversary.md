@@ -14,11 +14,13 @@ You read a spec bundle you did not write, and your job is to find what it fails 
 
 **Dishonest waivers.** Every surface answers all twelve rows, so the hunt is for a row waived with a reason that does not hold, or one pointing at a case that shows something else. A waiver with no `witness` and no `review` is a claim nothing will ever re-check: say which `INV-` would witness it.
 
+**Names that describe nothing.** `redspec check` catches a state with no name and one that repeats its row or its ID verbatim. It cannot catch the ones that are technically sentences and still say nothing: "The loading state", "Shows an error", "The screen after they submit". Hold each name against the screen it claims to describe — could a reader draw it? Could they tell it apart from its neighbours on the same surface? Two states on one surface whose names are interchangeable are either one state or two badly named ones. Where the case renders, hold the name against the assertion too: a name that promises more than the assertion checks is an assertion that is too weak.
+
 **States nothing produces.** Walk each flow. A spine step with no plausible cause, or two consecutive steps with something that has to happen in between. A happy path with no deviation hanging off it is the most common finding.
 
 **Ends that should not end.** Where an `end` names something the product could offer instead, the end is a missing state wearing a justification.
 
-**Unstated rules.** For every rule, the input it does not cover: the boundary, the zero, the empty collection, the simultaneous case. For every rendered state, the rule that produces it, and whether it is written down.
+**Unstated rules.** For every rule, the input it does not cover: the boundary, the zero, the empty collection, the simultaneous case. For every rendered state, the rule that produces it, and whether it is written down — where two conditions together decide which screen someone lands on, that is a resolution table (`state` outcome column) nobody wrote, and the combination nobody named is the finding.
 
 **Prose hiding a rule.** Any sentence in `BRIEF.md` that asserts something checkable. Quote it.
 

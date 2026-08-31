@@ -10,7 +10,7 @@ Cut the spec into tracer bullets: narrow paths through every layer, each **claim
 
 ## Process
 
-1. **Collect the artifacts.** `redspec status --ids <slug>` lists every `STATE-`, `JOURNEY-`, `RULE-`, `INV-`. This list is the work. Nothing outside it gets built; nothing in it gets skipped.
+1. **Collect the artifacts.** `redspec status --ids <slug>` lists every `STATE-`, `JOURNEY-`, `RULE-`, `INV-`, `SURFACE-`. This list is the work. Nothing outside it gets built; nothing in it gets skipped. A `SURFACE-` is a screen's twelve answers, waiver reasons included — claim it with the slice that first builds that screen, so weakening a waiver later needs the same sign-off the original did.
 
 2. **Draft vertical slices.** Each cuts a complete path through every layer it touches; is demoable alone; fits one fresh context window. Prefactoring comes first as its own slice. Give each its blocking edges.
 

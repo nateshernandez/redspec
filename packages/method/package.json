@@ -1,10 +1,19 @@
 {
   "name": "@redspec/method",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.1.0-alpha.1",
   "description": "The redspec method as one source -- skills and agents -- rendered per harness.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nateshernandez/redspec.git",
+    "directory": "packages/method"
+  },
+  "homepage": "https://github.com/nateshernandez/redspec/tree/main/packages/method#readme",
+  "bugs": "https://github.com/nateshernandez/redspec/issues",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -15,6 +24,10 @@
     "dist",
     "plugin"
   ],
+  "publishConfig": {
+    "access": "public",
+    "tag": "alpha"
+  },
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean",
     "typecheck": "tsc --noEmit"

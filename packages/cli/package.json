@@ -1,6 +1,6 @@
 {
   "name": "@redspec/cli",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "description": "redspec: init, check, status, new, accept, sync, doctor.",
   "license": "MIT",
   "repository": {

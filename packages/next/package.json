@@ -1,6 +1,6 @@
 {
   "name": "@redspec/next",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "description": "The redspec spec route, board, and production gate for Next.js 16.",
   "license": "MIT",
   "repository": {

@@ -88,6 +88,37 @@ you. Don't commit them to a target repo you don't control long-term, and
 remove them once `@redspec/*` is actually published — replace with real
 version ranges at that point.
 
+## Releasing
+
+The packages publish from `main`, in dependency order — `core` and `method`
+first, then `cli` and `next`, which depend on them. `pnpm publish` rewrites the
+`workspace:*` entries to the real version on the way out; verify that by packing
+a tarball and reading the manifest back, because `--dry-run` prints nothing
+useful:
+
+```bash
+pnpm pack --pack-destination /tmp
+tar -xzOf /tmp/redspec-cli-<version>.tgz package/package.json
+```
+
+**Set the dist-tag explicitly.** `publishConfig.tag` did not take effect on the
+first alpha: `latest` ended up on the prerelease and no `alpha` tag existed
+until one was added by hand. It is unresolved whether pnpm ignores the field or
+npm forces `latest` on a package's first-ever publish, so do not rely on it:
+
+```bash
+pnpm publish --tag alpha
+npm dist-tag add @redspec/<pkg>@<version> alpha   # verify, don't assume
+npm view @redspec/<pkg> dist-tags
+```
+
+`latest` cannot be removed once set — npm 403s on deleting the default tag — so
+a package's first publish decides what a bare `npm install` gets until a later
+version moves it.
+
+Publishing needs 2FA: either an OTP, or a granular access token scoped to the
+`@redspec` org with *bypass 2FA* enabled.
+
 ## Where things live
 
 |                                       |                                                                                                  |

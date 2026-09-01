@@ -9,7 +9,7 @@
   <img alt="Claude Code · Cursor · Codex · Copilot · Gemini" src="https://img.shields.io/badge/agents-Claude%20Code%20%C2%B7%20Cursor%20%C2%B7%20Codex%20%C2%B7%20Copilot%20%C2%B7%20Gemini-8A2BE2.svg">
 </p>
 
-> **Status: in development.** The core, CLI, and method are tested and work end to end on a fresh Next.js app. Nothing is published to npm yet, the board has not been mounted in an example app from this repo, and names may still change. See [Status](#status) before depending on it.
+> **Status: in development.** The core, CLI, and method are tested and work end to end on a fresh Next.js app. The packages are published as a public **alpha** and the board has not been mounted in an example app from this repo, so names and shapes may still change. See [Status](#status) before depending on it.
 
 ---
 
@@ -357,7 +357,7 @@ This repo is also a Claude Code marketplace:
 | ⚠️  | `publicBoard` opens the production route for demo repos; the default stays closed and the three-key wiring is covered by tests, but it has not yet run on a real deploy                                       |
 | ⚠️  | journeys are enumerated from the flow graph and scaffolded as `test.fixme`, not yet executed against a machine                                                                                                |
 | ⚠️  | state digests do not yet include the `COPY-` entries a case renders                                                                                                                                           |
-| ❌  | not published to npm; the `npx` command above will work once it is                                                                                                                                            |
+| ✅  | published to npm as a public alpha (`0.1.0-alpha.1`, also tagged `alpha`); `npx @redspec/cli init` works, and both `latest` and `alpha` point at the prerelease until there is a stable release to move `latest` to |
 | ❌  | only one framework adapter (Next.js 16); the hosted board with per-PR previews and recorded sign-offs does not exist                                                                                          |
 
 Ordered plans are in [ROADMAP.md](ROADMAP.md). The name may still change.

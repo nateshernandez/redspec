@@ -1,11 +1,20 @@
 {
   "name": "@redspec/core",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.1.0-alpha.1",
   "description": "Specs made of artifacts that can go red: types, audit, lock, coverage, and decision-table analysis.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nateshernandez/redspec.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/nateshernandez/redspec/tree/main/packages/core#readme",
+  "bugs": "https://github.com/nateshernandez/redspec/issues",
   "type": "module",
   "sideEffects": false,
+  "engines": {
+    "node": ">=20"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -19,6 +28,10 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public",
+    "tag": "alpha"
+  },
   "scripts": {
     "build": "tsup src/index.ts src/client.ts --format esm --dts --clean",
     "typecheck": "tsc --noEmit"

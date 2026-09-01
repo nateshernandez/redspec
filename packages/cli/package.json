@@ -1,10 +1,19 @@
 {
   "name": "@redspec/cli",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.1.0-alpha.1",
   "description": "redspec: init, check, status, new, accept, sync, doctor.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nateshernandez/redspec.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/nateshernandez/redspec/tree/main/packages/cli#readme",
+  "bugs": "https://github.com/nateshernandez/redspec/issues",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "bin": {
     "redspec": "./bin/redspec.js"
   },
@@ -16,9 +25,12 @@
   },
   "files": [
     "dist",
-    "bin",
-    "templates"
+    "bin"
   ],
+  "publishConfig": {
+    "access": "public",
+    "tag": "alpha"
+  },
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean",
     "typecheck": "tsc --noEmit"

@@ -16,6 +16,7 @@ const ctx: RenderContext = {
   stateCommand: "pnpm test:state",
   journeyCommand: "pnpm test:journey",
   conventionsPath: "docs/agents/redspec.md",
+  publicBoard: false,
 }
 
 describe("the method source", () => {
@@ -54,6 +55,20 @@ describe("rendering", () => {
       expect(conv.content).toContain("proxy.ts")
     }
   })
+  it("tells a normal repo the route 404s, and a publishing one that it does not", () => {
+    const closed = renderHarness("claude", method, ctx).find(
+      (f) => f.path === ctx.conventionsPath
+    )!.content
+    expect(closed).toContain("answers 404 before anything renders")
+    expect(closed).not.toContain("REDSPEC_PUBLISH_BOARD")
+
+    const open = renderHarness("claude", method, { ...ctx, publicBoard: true }).find(
+      (f) => f.path === ctx.conventionsPath
+    )!.content
+    expect(open).toContain("REDSPEC_PUBLISH_BOARD=1")
+    expect(open).not.toContain("answers 404 before anything renders")
+  })
+
   it("gives Claude skills and agents, Cursor manual rules, Codex a section", () => {
     const claude = renderHarness("claude", method, ctx).map((f) => f.path)
     expect(claude).toContain(".claude/skills/draft-skeleton/SKILL.md")

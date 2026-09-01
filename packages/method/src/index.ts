@@ -94,11 +94,14 @@ export type RenderContext = {
   stateCommand: string
   journeyCommand: string
   conventionsPath: string
+  /** This repo serves the board in production on purpose. */
+  publicBoard: boolean
 }
 
 export function fill(template: string, ctx: RenderContext): string {
-  const gate =
-    ctx.framework === "next"
+  const gate = ctx.publicBoard
+    ? "This repo declares `publicBoard: true`, so `proxy.ts` serves the route in production wherever `REDSPEC_PUBLISH_BOARD=1` is set. That is deliberate and it is unusual: the board shows unshipped screens, waivers, and fixtures. Everywhere the variable is unset, the 404 still stands."
+    : ctx.framework === "next"
       ? "Gated by `proxy.ts`, which answers 404 before anything renders whenever `NODE_ENV` is `production` — a layout-level `notFound()` still serializes the page into the response."
       : "Gate it before render in production: a response-level 404, not a layout-level one."
   return template
@@ -137,7 +140,9 @@ function pointer(ctx: RenderContext): string {
     `- \`redspec status\` is the work list; \`redspec check\` is the gate. Run \`check\` before saying you are done.`,
     `- Scaffold artifacts with \`redspec new\`; never hand-write into \`${ctx.specsDir}/\` and never edit \`.spec-lock.json\`.`,
     `- **\`${ctx.conventionsPath}\` carries the paths, the shapes, and every finding kind.** Read it before touching a spec.`,
-    `- The spec route 404s in production, so both Playwright tiers run against the dev server.`,
+    ctx.publicBoard
+      ? `- The spec route is published in production here (\`publicBoard: true\`), but both Playwright tiers still run against the dev server.`
+      : `- The spec route 404s in production, so both Playwright tiers run against the dev server.`,
   ].join("\n")
 }
 

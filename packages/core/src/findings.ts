@@ -24,6 +24,8 @@ export type FindingKind =
   | "unknown-copy"
   | "missing-brief"
   | "unregistered-feature"
+  // config: the repo against its own declarations
+  | "board-published"
   // coverage: artifacts against slices
   | "orphan"
   | "claimless"

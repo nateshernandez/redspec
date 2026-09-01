@@ -571,6 +571,33 @@ export function reportBundle(
   }
 }
 
+/** The switch that lets a declared public board render in production. */
+export const PUBLISH_BOARD_ENV = "REDSPEC_PUBLISH_BOARD"
+
+/**
+ * The switch thrown without the intent declared.
+ *
+ * `publicBoard` is the one config value that turns a safety property off, so
+ * the deploy environment asserting it is not enough: the repo has to say so
+ * too, in a file that shows up in a diff. A repo that copied someone else's
+ * `proxy.ts` and inherited the variable lands here rather than quietly
+ * serving its own unshipped screens.
+ */
+export function publishedBoard(
+  config: SpecConfig,
+  env: Record<string, string | undefined> = process.env
+): Finding[] {
+  if (env[PUBLISH_BOARD_ENV] !== "1" || config.publicBoard) return []
+  return [
+    {
+      kind: "board-published" as const,
+      id: PUBLISH_BOARD_ENV,
+      detail: `${PUBLISH_BOARD_ENV}=1 is set, but spec.config.ts does not declare publicBoard: true. The board renders unshipped screens, waivers, and fixtures. Declare it deliberately, or unset the variable.`,
+      at: "spec.config.ts",
+    },
+  ]
+}
+
 /** The bundle directories with no spec file: declared on disk, unknown to the app. */
 export function unregisteredBundles(
   root: string,

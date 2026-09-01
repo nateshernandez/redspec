@@ -7,10 +7,13 @@ import {
   copyIdsIn,
   readResolvedStates,
   readStateAssertions,
+  publishedBoard,
+  PUBLISH_BOARD_ENV,
   reportBundle,
   unregisteredBundles,
 } from "./coverage"
 import { digestState } from "./digest"
+import { defineSpecConfig } from "./config"
 import { loadConfig, loadSpecs } from "./load"
 import { kinds } from "./fixtures.test-helper"
 
@@ -38,6 +41,34 @@ describe("loading a repo", () => {
     expect(unregisteredBundles(root, config, specs)).toEqual([
       expect.objectContaining({ kind: "unregistered-feature", id: "stray" }),
     ])
+  })
+})
+
+describe("publishing the board", () => {
+  const on = { [PUBLISH_BOARD_ENV]: "1" }
+
+  it("is closed by default", () => {
+    expect(defineSpecConfig().publicBoard).toBe(false)
+  })
+
+  it("reports the switch thrown without the intent declared", () => {
+    expect(publishedBoard(defineSpecConfig(), on)).toEqual([
+      expect.objectContaining({ kind: "board-published", at: "spec.config.ts" }),
+    ])
+  })
+
+  it("says nothing when the repo declares it", () => {
+    expect(publishedBoard(defineSpecConfig({ publicBoard: true }), on)).toEqual([])
+  })
+
+  it("says nothing when the switch is off, declared or not", () => {
+    expect(publishedBoard(defineSpecConfig(), {})).toEqual([])
+    expect(publishedBoard(defineSpecConfig({ publicBoard: true }), {})).toEqual([])
+  })
+
+  it("takes only an exact 1, so a stray truthy string does not open the gate", () => {
+    for (const v of ["true", "yes", "0", ""])
+      expect(publishedBoard(defineSpecConfig(), { [PUBLISH_BOARD_ENV]: v })).toEqual([])
   })
 })
 

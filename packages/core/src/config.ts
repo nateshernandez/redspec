@@ -28,6 +28,19 @@ export type SpecConfig = {
   }
   /** Which harnesses `redspec sync` writes agent context for. */
   harnesses: Harness[]
+  /**
+   * Let the board render in production when `REDSPEC_PUBLISH_BOARD=1`.
+   *
+   * Off everywhere by default. The board shows unshipped screens, waivers, and
+   * fixtures, so a normal app must never serve it -- declare this only in a
+   * repo whose spec *is* the product: a demo, a showcase, a teaching repo.
+   *
+   * Three independent things have to agree before a board renders in
+   * production: this declaration is the intent, `proxy.ts` passing `publish`
+   * is the wiring, and the environment variable is the switch. Any one of them
+   * missing and the gate holds.
+   */
+  publicBoard: boolean
 }
 
 export const DEFAULT_CONFIG: SpecConfig = {
@@ -42,6 +55,7 @@ export const DEFAULT_CONFIG: SpecConfig = {
   journeyBudget: 200,
   accept: { command: "pnpm test" },
   harnesses: [],
+  publicBoard: false,
 }
 
 export type SpecConfigInput = {

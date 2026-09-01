@@ -5,7 +5,7 @@
 <p align="center">
   <a href="LICENSE"><img alt="MIT" src="https://img.shields.io/badge/license-MIT-blue.svg"></a>
   <img alt="status: in development" src="https://img.shields.io/badge/status-in%20development-orange.svg">
-  <img alt="node >=20" src="https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg">
+  <img alt="node &gt;=20" src="https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg">
   <img alt="Claude Code · Cursor · Codex · Copilot · Gemini" src="https://img.shields.io/badge/agents-Claude%20Code%20%C2%B7%20Cursor%20%C2%B7%20Codex%20%C2%B7%20Copilot%20%C2%B7%20Gemini-8A2BE2.svg">
 </p>
 
@@ -123,6 +123,32 @@ Then, in your agent:
 ```
 
 The machinery lives in `node_modules`, not in your repo. When redspec upgrades, `redspec doctor` tells you which generated files are stale and `redspec sync` re-renders them.
+
+### Publishing the board
+
+The board is a development surface. It shows unshipped screens, every waiver with its reasoning, and the fixtures behind each case — so `proxy.ts` answers 404 for the whole route in production, and `SpecLayout` calls `notFound()` behind it in case the proxy is ever bypassed.
+
+A few repos want the opposite: the spec **is** the product, as in a demo, a showcase, or a teaching repo. Opening the route takes three things that agree, each visible somewhere different:
+
+```ts
+// spec.config.ts — the intent, in a file that shows up in a diff
+export default defineSpecConfig({ publicBoard: true })
+
+// proxy.ts — the wiring, explicit at the call site
+export const proxy = createSpecProxy({
+  route: "/spec",
+  publish: process.env.REDSPEC_PUBLISH_BOARD === "1",
+})
+```
+
+```bash
+# the switch, in the one environment that should serve it
+REDSPEC_PUBLISH_BOARD=1
+```
+
+`createSpecRoutes` takes the same `publish` value, and it has to match — the proxy letting a request through while the layout still 404s is a blank page with no explanation. Any one of the three missing and the gate holds shut.
+
+`redspec check` reports `board-published` when the environment variable is set in a repo whose `spec.config.ts` does not declare `publicBoard`, which is what a repo copied from someone else's looks like. A repo that declares it stays clean, and its generated agent context says so in place of the usual 404 note.
 
 ## What a feature looks like
 
@@ -328,6 +354,7 @@ This repo is also a Claude Code marketplace:
 | ✅  | `@redspec/core`, `@redspec/cli`, `@redspec/method`: built, typechecked, 64 tests, and the CLI smoke-tested end to end (`init` → `new feature` → `status` → `check` → `accept` → `doctor`) on a fresh Next app |
 | ✅  | the lock and the `amended` finding; total decision tables with gap/overlap analysis; harness detection and generated, staleness-checked context                                                               |
 | ⚠️  | `@redspec/next` typechecks and builds, and is a port of a board that works — but has not yet been mounted in an example app from this repo                                                                    |
+| ⚠️  | `publicBoard` opens the production route for demo repos; the default stays closed and the three-key wiring is covered by tests, but it has not yet run on a real deploy                                       |
 | ⚠️  | journeys are enumerated from the flow graph and scaffolded as `test.fixme`, not yet executed against a machine                                                                                                |
 | ⚠️  | state digests do not yet include the `COPY-` entries a case renders                                                                                                                                           |
 | ❌  | not published to npm; the `npx` command above will work once it is                                                                                                                                            |

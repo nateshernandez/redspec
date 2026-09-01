@@ -430,46 +430,59 @@ const HANDLES = {
   rejoin: { sourceHandle: "right", targetHandle: "top" },
 } as const
 
-function toFlow(
-  { nodes, edges }: Board,
-  route: string,
-  focus: Set<string> | null
-): { nodes: Node[]; edges: Edge[] } {
-  return {
-    nodes: nodes.map((n) => ({
-      id: n.id,
-      type: n.type,
-      position: n.position,
-      width: n.width,
-      height: n.height,
-      data: { ...n.data, route },
-      draggable: false,
-      // A lane is scenery: it sits behind the edges and cannot be picked.
-      selectable: n.type === "spec",
-      zIndex: n.type === "lane" ? -1 : 0,
-      className: n.type === "lane" ? "rs-lane-node" : undefined,
-    })),
-    edges: edges.map((e) => {
-      const lit = !focus || (focus.has(e.source) && focus.has(e.target))
-      const stroke = EDGE_STYLE[e.kind].stroke
-      return {
-        id: e.id,
-        source: e.source,
-        target: e.target,
-        label: e.label,
-        type: e.kind,
-        ...HANDLES[e.kind],
-        style: { ...EDGE_STYLE[e.kind], opacity: lit ? 1 : 0.12 },
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          width: 20,
-          height: 20,
-          color: stroke,
-        },
-        zIndex: lit ? 1 : 0,
-      }
-    }),
-  }
+/**
+ * Nodes, built without reference to focus.
+ *
+ * Kept apart from the edges because React Flow decides whether to reuse a
+ * node's internals by *identity*: `adoptUserNodes` short-circuits on
+ * `userNode === internals.userNode`, and rebuilds otherwise. A rebuilt node
+ * carrying neither `handles` nor `measured` gets `handleBounds: undefined`
+ * (see `parseHandles`), `getEdgePosition` then has no anchor, and every
+ * `EdgeWrapper` renders null -- the board draws its connectors on mount and
+ * drops all of them the moment anything recomputes the node list. Focus
+ * changes on hover, so that moment is the first time the pointer crosses a
+ * state. Nothing re-measures afterwards, because no box has changed size.
+ *
+ * Focus touches only edge opacity, so nothing here depends on it and these
+ * objects stay identical across a hover.
+ */
+export function toFlowNodes({ nodes }: Board, route: string): Node[] {
+  return nodes.map((n) => ({
+    id: n.id,
+    type: n.type,
+    position: n.position,
+    width: n.width,
+    height: n.height,
+    data: { ...n.data, route },
+    draggable: false,
+    // A lane is scenery: it sits behind the edges and cannot be picked.
+    selectable: n.type === "spec",
+    zIndex: n.type === "lane" ? -1 : 0,
+    className: n.type === "lane" ? "rs-lane-node" : undefined,
+  }))
+}
+
+export function toFlowEdges({ edges }: Board, focus: Set<string> | null): Edge[] {
+  return edges.map((e) => {
+    const lit = !focus || (focus.has(e.source) && focus.has(e.target))
+    const stroke = EDGE_STYLE[e.kind].stroke
+    return {
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      label: e.label,
+      type: e.kind,
+      ...HANDLES[e.kind],
+      style: { ...EDGE_STYLE[e.kind], opacity: lit ? 1 : 0.12 },
+      markerEnd: {
+        type: MarkerType.ArrowClosed,
+        width: 20,
+        height: 20,
+        color: stroke,
+      },
+      zIndex: lit ? 1 : 0,
+    }
+  })
 }
 
 /** Everything up- and downstream of one node: the path it is on, both ways. */
@@ -520,7 +533,9 @@ export function SpecBoardCanvas({
     return board.nodes.find((n) => n.id === active)?.data.flowId ?? null
   }, [board, active])
 
-  const graph = useMemo(() => toFlow(board, route, focus), [board, route, focus])
+  // Two memos, not one: a focus change must not produce new node objects.
+  const flowNodes = useMemo(() => toFlowNodes(board, route), [board, route])
+  const flowEdges = useMemo(() => toFlowEdges(board, focus), [board, focus])
   const lanes = useMemo(
     () =>
       board.nodes
@@ -535,8 +550,8 @@ export function SpecBoardCanvas({
       <FocusContext.Provider value={focusValue}>
         <ReactFlow
           key={view}
-          nodes={graph.nodes}
-          edges={graph.edges}
+          nodes={flowNodes}
+          edges={flowEdges}
           nodeTypes={nodeTypes}
           edgeTypes={edgeTypes}
           fitView

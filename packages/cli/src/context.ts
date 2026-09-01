@@ -3,6 +3,7 @@ import { join } from "node:path"
 import {
   loadConfig,
   loadSpecs,
+  publishedBoard,
   reportBundle,
   unregisteredBundles,
   type BundleReport,
@@ -29,7 +30,7 @@ export async function loadContext(
   const { config, path } = await loadConfig(root)
   const specs = await loadSpecs(root, config)
   const reports = specs.map((s) => reportBundle(root, config, s, now))
-  const extra = unregisteredBundles(root, config, specs)
+  const extra = [...unregisteredBundles(root, config, specs), ...publishedBoard(config)]
   const pkgPath = join(root, "package.json")
   const pkg = existsSync(pkgPath)
     ? (JSON.parse(readFileSync(pkgPath, "utf8")) as Record<string, unknown>)

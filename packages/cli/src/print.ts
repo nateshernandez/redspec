@@ -70,6 +70,12 @@ const GROUPS: Group[] = [
     tone: pc.red,
   },
   {
+    title: "CONFIG",
+    kinds: ["board-published"],
+    hint: "→ the repo disagrees with its own declarations",
+    tone: pc.red,
+  },
+  {
     title: "COVERAGE",
     kinds: ["orphan", "claimless", "unknown-id", "claimed-twice"],
     hint: "→ /cut-slices",

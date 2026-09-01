@@ -29,6 +29,7 @@ export function renderContext(root: string, config: SpecConfig): RenderContext {
     stateCommand: runScript(pm, "test:state"),
     journeyCommand: runScript(pm, "test:journey"),
     conventionsPath: "docs/agents/redspec.md",
+    publicBoard: config.publicBoard,
   }
 }
 

@@ -1,6 +1,6 @@
 {
   "name": "@redspec/core",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "description": "Specs made of artifacts that can go red: types, audit, lock, coverage, and decision-table analysis.",
   "license": "MIT",
   "repository": {

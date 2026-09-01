@@ -23,6 +23,12 @@ export type RouteOptions = {
   stateTestsDir?: string
   /** The bundle root, for the rules a resolution table lives in. */
   specsDir?: string
+  /**
+   * Serve the board in production anyway. Must be given the same value as
+   * `createSpecProxy`'s `publish`: the proxy answering while the layout still
+   * calls `notFound()` is a 404 with no explanation.
+   */
+  publish?: boolean
 }
 
 /**
@@ -32,7 +38,12 @@ export type RouteOptions = {
  */
 export function createSpecRoutes(
   specs: Spec[],
-  { route = "/spec", stateTestsDir = "e2e/state", specsDir = "specs" }: RouteOptions = {}
+  {
+    route = "/spec",
+    stateTestsDir = "e2e/state",
+    specsDir = "specs",
+    publish = false,
+  }: RouteOptions = {}
 ) {
   const bySlug = new Map(specs.map((s) => [s.slug, s]))
 
@@ -47,7 +58,7 @@ export function createSpecRoutes(
 
   /** Defence in depth behind the proxy: the layout does the gate and nothing else. */
   function SpecLayout({ children }: { children: ReactNode }) {
-    if (process.env.NODE_ENV === "production") notFound()
+    if (process.env.NODE_ENV === "production" && !publish) notFound()
     return children
   }
 
